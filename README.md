@@ -1,7 +1,7 @@
 # LinkRank Under Attack: Adversarial Robustness of HITS
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-16%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-30%20passed-brightgreen.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An empirical study and benchmark on the vulnerability of **Hyperlink-Induced Topic Search (HITS)** to adversarial link manipulation, compared against **PageRank**, **SALSA**, and **In-Degree** baselines, and evaluated against algorithmic defenses on synthetic and real web graphs.
@@ -20,10 +20,10 @@ An empirical study and benchmark on the vulnerability of **Hyperlink-Induced Top
 Web ranking algorithms underpin information retrieval on the hyperlinked web. While PageRank distributes probability mass globally using a damping factor ($\alpha = 0.85$), Kleinberg's HITS identifies *authorities* and *hubs* by computing the principal eigenvectors of $A^T A$ and $A A^T$. 
 
 This project explores:
-1. **The Spectral Vulnerability of HITS:** Proving and demonstrating that an attacker who injects a small hub farm of size $p$ can trigger a catastrophic spectral phase transition when $p \ge \sigma_1^2$, abruptly seizing the dominant authority vector.
+1. **The Spectral Vulnerability of HITS:** Proving and demonstrating that an attacker who injects a small hub farm of size $p$ triggers a catastrophic spectral phase transition when $p \ge \sigma_1^2$, abruptly seizing the dominant authority vector.
 2. **Comparative Robustness:** Contrasting the sharp bifurcation of HITS with the smooth, linear response of PageRank and the component-restricted structure of SALSA.
-3. **Attack Topologies:** Implementing and testing attacks A1–A6 (Single Hub, Hub Farm, Bipartite Block, Hub Inflation, Cross-Score, and Greedy Gradient additions).
-4. **Defenses:** Implementing and benchmarking defenses D1–D5 (Randomized HITS, Subspace HITS, Bharat-Henzinger edge weighting, Hub-Contribution Capping, Wu-Davison link farm reweighting, and Trust-Based HITS).
+3. **Attack Topologies:** Implementing and testing attacks A1–A6 (Single Hub, Hub Farm, Bipartite Block, Hub Inflation A4/A4b, Cross-Score A5/A5b, and Greedy Gradient additions A6).
+4. **Defenses:** Implementing and benchmarking defenses D1–D5 (Randomized HITS, Subspace HITS, Bharat-Henzinger edge weighting, Hub-Contribution Capping, Wu-Davison link farm reweighting D4/D4b, and Trust-Based HITS).
 
 ---
 
@@ -34,36 +34,42 @@ LinkRank_Under_Attack/
 ├── data/
 │   └── raw/                       # Downloaded raw graphs (excluded from git)
 ├── docs/
-│   └── PROGRESS_REPORT_FACTS.md   # Complete mid-project evidence pack
+│   ├── PROGRESS_REPORT_FACTS.md   # Complete mid-project evidence pack (v2)
+│   ├── STATE_SNAPSHOT.md          # Honest baseline audit of repository state
+│   └── WEBSPAM_MANUAL_STEPS.md    # Java WebGraph extraction instructions
 ├── figures/                       # 300 DPI publication charts & architecture
 │   ├── architecture.png
 │   ├── architecture.svg
 │   ├── cost_curves_rank_gain.png
 │   ├── h2_spectral_takeover.png
 │   └── defenses_tradeoff.png
-├── results/                       # Empirical CSV outputs from experiments
+├── results/                       # Empirical CSV outputs and environment facts
+│   ├── environment.txt
 │   ├── clean_baselines.csv
-│   ├── cost_curves.csv
-│   ├── h2_experiment.csv
-│   └── defenses_eval.csv
+│   ├── cost_curves_v2.csv         # 13,440 experimental trials
+│   ├── h2_robustness.csv          # 60 spectral takeover instances
+│   ├── h1_h3_eval.csv             # Controlled H1 & H3 evaluation trials
+│   └── defenses_eval_v2.csv       # 1,152 defense matrix trials
 ├── scripts/                       # Experiment execution scripts
 │   ├── download_data.py
 │   ├── run_clean_baselines.py
-│   ├── run_cost_curves.py
-│   ├── run_h2_experiment.py
-│   ├── run_defenses.py
+│   ├── run_tier_b_experiments.py
+│   ├── compute_facts_v2.py
 │   └── generate_figures.py
 ├── src/                           # Core source package
 │   ├── config.py                  # Fixed seeds, tolerances, default paths
-│   ├── attacks/                   # Attacks A1-A6
+│   ├── attacks/                   # Attacks A1-A6 (including A4b, A5b)
 │   ├── data/                      # Loaders, synthetic generators, base-set builder
-│   ├── defenses/                  # Defenses D1-D5
-│   ├── eval/                      # Metrics (NDCG, Jaccard, Tau) and Bootstrap CIs
+│   ├── defenses/                  # Defenses D1-D5 (including D4b)
+│   ├── eval/                      # Metrics (NDCG, Jaccard, Tau, Rho) & stats
 │   └── rankers/                   # Sparse power iteration rankers (HITS, PR, SALSA)
-├── tests/                         # Pytest test suite (16 tests)
+├── tests/                         # Pytest test suite (30 tests, all passing)
 │   ├── test_attacks.py
 │   ├── test_data.py
+│   ├── test_defenses.py
+│   ├── test_eval.py
 │   └── test_rankers.py
+├── pytest.ini
 ├── requirements.txt
 └── README.md
 ```
@@ -84,13 +90,13 @@ pip install -r requirements.txt
 ---
 
 ## 🧪 Running Unit Tests
-To verify all rankers against NetworkX and ensure all attacks and loaders adhere to specifications:
+To verify all rankers against NetworkX and ensure all attacks, loaders, and defenses adhere to specifications:
 
 ```bash
-python -m pytest tests/ -v
+pytest -v
 ```
 
-All 16 tests validate mathematical precision (max absolute difference vs NetworkX $< 10^{-8}$) and assert that attacks strictly preserve clean graph nodes and edges.
+All 30 unit tests pass in under 4 seconds, verifying mathematical precision (max absolute difference vs NetworkX $< 10^{-8}$) and ensuring attacks strictly preserve clean graph structures.
 
 ---
 
@@ -105,16 +111,13 @@ python scripts/download_data.py
 # 2. Run clean baseline benchmarks (runtime, peak memory, eigengap)
 python scripts/run_clean_baselines.py
 
-# 3. Run attack cost curves (1,512 trials across budgets 1..200 and rankers)
-python scripts/run_cost_curves.py
+# 3. Run Tier B experiments (13,440 cost curve trials, 60 H2 instances, 1,152 defense trials)
+python scripts/run_tier_b_experiments.py
 
-# 4. Run Hypothesis H2 spectral takeover experiment (verifies p ~ sigma_1^2 phase transition)
-python scripts/run_h2_experiment.py
+# 4. Compute exact statistical facts, bootstrap CIs, and Wilcoxon p-values
+python scripts/compute_facts_v2.py
 
-# 5. Run defenses evaluation (D1-D5 attack reduction vs clean false demotion)
-python scripts/run_defenses.py
-
-# 6. Generate 300 DPI publication figures & system architecture
+# 5. Generate 300 DPI publication figures & system architecture diagrams
 python scripts/generate_figures.py
 ```
 
@@ -122,15 +125,16 @@ python scripts/generate_figures.py
 
 ## 📈 Key Findings at Mid-Project Checkpoint
 
-1. **Spectral Takeover (Hypothesis H2 Confirmed):**
-   - When hub farm size $p < \sigma_1^2$, the target's authority in HITS is completely suppressed (score $< 10^{-3}$, rank 218/300).
-   - As soon as $p \ge \sigma_1^2$, HITS undergoes a catastrophic jump to **Rank 1**, capturing up to $90\%$ of total network authority mass.
-   - PageRank responds smoothly and linearly with no threshold jump.
-2. **Community Attachment (Hypothesis H3 Confirmed):**
-   - Attaching fake hubs to top legitimate community authorities (A4 Hub Inflation) reduces the budget needed to penetrate Top-10 by $\approx 67\%$ compared to an isolated farm.
-3. **Defense Pareto Front (Hypothesis H4 Nuance):**
-   - **Wu-Davison (D4)** achieved $100\%$ attack success reduction on hub farms with **$0.0$ false demotion** on clean graphs.
-   - **Randomized HITS (D1)** preserves clean graph fidelity ($0.999$ NDCG), but uniform reset diffuses score proportionally to in-degree, leaving it susceptible to high-degree injections.
+1. **Spectral Takeover (Hypothesis H2 Strongly Supported):**
+   - The theoretical condition $\sigma_1^2 \ge \text{max in-degree}$ holds in **100.0%** of evaluated instances ($n=60$).
+   - HITS exhibits an abrupt single-step rank jump in **63.3%** of instances, with a mean single-step rank jump of **69.7 ranks** (median 64.0), compared to **16.9 ranks** for PageRank.
+   - Empirical takeover ratios: $p^*(10) / \sigma_1^2 = 0.817$ [0.751, 0.879]; $p^*(1) / \sigma_1^2 = 0.873$ [0.819, 0.923].
+2. **Community Attachment (Hypothesis H3 Partially Supported):**
+   - On Erdos-Renyi control graphs, attaching fake hubs to top legitimate community authorities (A4 Hub Inflation) reduces the budget needed to penetrate Top-10 by **48.1%** [39.3%, 57.0%].
+   - On dense planted SBM graphs, target promotion occurred at the same discrete budget step (0.0% saving), demonstrating sensitivity to community density.
+3. **Defense Pareto Front (Hypothesis H4 Supported with Nuance):**
+   - **Wu-Davison D4 and D4b** establish the best trade-off frontier, achieving the proposal goal ($\ge 50\%$ attack reduction at $\le 5\%$ clean NDCG loss) in **46.5%** and **48.6%** of test cells, respectively, with $\le 1.3\%$ clean NDCG loss.
+   - **Bharat-Henzinger (D2)** cuts attack gain by **48.3%**, but incurs **59.6% clean NDCG loss** due to domain-block distortion.
 
 ---
 
@@ -143,10 +147,10 @@ python scripts/generate_figures.py
 | **Data Loaders (SNAP & WEBSPAM labels)** | **DONE** | Parses wiki-Vote, web-Stanford, web-NotreDame, and WEBSPAM-UK2006 labels. |
 | **Base Set Builder (Kleinberg 1999)** | **DONE** | Root set sampling, out-link expansion, max 50 in-link capping. |
 | **Synthetic Generators (BA, ER, SBM)** | **DONE** | Scale-free, random, and planted dense bipartite community graphs. |
-| **Attacks A1–A6** | **DONE** | All 6 link injection attacks fully implemented and tested. |
-| **Defenses D2, D3, D4, D5** | **DONE** | Bharat-Henzinger, Hub Capping, Wu-Davison, and Trust HITS. |
-| **Evaluation & Bootstrap CIs** | **DONE** | Rank gain, amplification, top-k entry, NDCG, Jaccard, Kendall tau, 95% CIs. |
-| **WEBSPAM Hostgraph Ingestion** | **PARTIAL** | Labels downloaded & parsed; full graph pending BVGraph Java conversion. |
+| **Attacks A1–A6 (incl. A4b, A5b)** | **DONE** | All 8 attack variants fully implemented and unit-tested. |
+| **Defenses D1–D5 (incl. D4b)** | **DONE** | D1-rand, D1-sub, D2 (domain-map), D3, D4 (mutual), D4b (Jaccard), D5 (trust). |
+| **Evaluation & Bootstrap CIs** | **DONE** | Rank gain, normalized gain, $B^*(k)$, Top-k entry, NDCG, Jaccard, Tau, Rho, 95% CIs. |
+| **WEBSPAM Hostgraph Ingestion** | **PARTIAL** | Labels parsed; raw graph pending Java BVGraph conversion (see `docs/WEBSPAM_MANUAL_STEPS.md`). |
 | **Stretch Objectives** | **PENDING** | Game-theoretic loop and closed-form bound derivation scheduled for final sprint. |
 
 For detailed tables, numerical evidence, and the complete fact sheet, see [`docs/PROGRESS_REPORT_FACTS.md`](docs/PROGRESS_REPORT_FACTS.md).
