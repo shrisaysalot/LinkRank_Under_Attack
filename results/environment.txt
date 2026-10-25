@@ -1,0 +1,18 @@
+Operating System: Windows 11 (10.0.26200)
+Architecture: AMD64
+Processor: 12th Gen Intel(R) Core(TM) i5-12500H
+Physical Cores: 12
+Logical Processors: 16
+Total Visible RAM: 15.69 GB (16849293312 bytes)
+
+Python: 3.12.5 (tags/v3.12.5:ff3bc82, Aug  6 2024, 20:45:27) [MSC v.1940 64 bit (AMD64)]
+numpy: 1.26.4
+scipy: 1.12.0
+networkx: 3.4.2
+pandas: 3.0.5
+matplotlib: 3.10.8
+psutil: 7.2.2
+
+Peak Memory Measurement Methods:
+- Python Heap Allocations: tracemalloc (tracemalloc.get_traced_memory())
+- Process Resident Set Size (RSS): psutil (psutil.Process().memory_info().rss)

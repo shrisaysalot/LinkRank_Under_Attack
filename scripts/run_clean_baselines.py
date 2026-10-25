@@ -8,6 +8,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import time
 import tracemalloc
+import psutil
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -48,6 +49,8 @@ def evaluate_graph_clean(graph_name: str, G: nx.DiGraph) -> list:
     records = []
 
     for r_name, r_fn in rankers.items():
+        process = psutil.Process()
+        rss_before = process.memory_info().rss
         tracemalloc.start()
         t0 = time.perf_counter()
 
@@ -56,8 +59,10 @@ def evaluate_graph_clean(graph_name: str, G: nx.DiGraph) -> list:
         t_elapsed = time.perf_counter() - t0
         _, peak_mem = tracemalloc.get_traced_memory()
         tracemalloc.stop()
+        rss_after = process.memory_info().rss
 
-        peak_mb = peak_mem / (1024 * 1024)
+        peak_heap_mb = peak_mem / (1024 * 1024)
+        rss_mb = rss_after / (1024 * 1024)
 
         rec = {
             "graph": graph_name,
@@ -68,12 +73,13 @@ def evaluate_graph_clean(graph_name: str, G: nx.DiGraph) -> list:
             "converged": res.converged,
             "eigengap": res.eigengap if res.eigengap is not None else np.nan,
             "elapsed_sec": t_elapsed,
-            "peak_mem_mb": peak_mb,
+            "peak_mem_tracemalloc_mb": peak_heap_mb,
+            "process_rss_mb": rss_mb,
             "top1_node": int(res.top_k_indices(1)[0]) if len(res.scores) > 0 else -1,
             "top1_score": float(np.max(res.scores)) if len(res.scores) > 0 else 0.0,
         }
         records.append(rec)
-        print(f"[{r_name:15s}] Iter: {res.iterations:3d} | Conv: {str(res.converged):5s} | Gap: {rec['eigengap']:.4f} | Time: {t_elapsed:.4f}s | Mem: {peak_mb:.2f}MB")
+        print(f"[{r_name:15s}] Iter: {res.iterations:3d} | Conv: {str(res.converged):5s} | Gap: {rec['eigengap']:.4f} | Time: {t_elapsed:.4f}s | Heap: {peak_heap_mb:.2f}MB | RSS: {rss_mb:.2f}MB")
 
     return records
 

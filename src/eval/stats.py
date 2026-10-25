@@ -59,3 +59,51 @@ def wilcoxon_test(
 
     res = stats.wilcoxon(diff)
     return float(res.statistic), float(res.pvalue)
+
+
+def holm_bonferroni(
+    p_values: Union[List[float], np.ndarray],
+    alpha: float = 0.05
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Applies Holm-Bonferroni step-down correction for multiple hypothesis testing.
+
+    Parameters
+    ----------
+    p_values : list or np.ndarray
+        Array of raw unadjusted p-values.
+    alpha : float
+        Target family-wise error rate (FWER).
+
+    Returns
+    -------
+    rejected : np.ndarray of bool
+        Boolean mask indicating whether each hypothesis is rejected.
+    adjusted_p : np.ndarray of float
+        Holm-adjusted p-values in the original order.
+    """
+    p_arr = np.asarray(p_values, dtype=float)
+    m = len(p_arr)
+    if m == 0:
+        return np.array([], dtype=bool), np.array([], dtype=float)
+
+    # Sort indices
+    sort_idx = np.argsort(p_arr)
+    sorted_p = p_arr[sort_idx]
+
+    # Compute step-down multipliers: (m - i)
+    adj_sorted = np.empty(m, dtype=float)
+    running_max = 0.0
+    for i in range(m):
+        raw_val = sorted_p[i]
+        multiplier = m - i
+        val = min(1.0, raw_val * multiplier)
+        running_max = max(running_max, val)
+        adj_sorted[i] = running_max
+
+    # Restore original order
+    adjusted_p = np.empty(m, dtype=float)
+    adjusted_p[sort_idx] = adj_sorted
+
+    rejected = adjusted_p <= alpha
+    return rejected, adjusted_p
+

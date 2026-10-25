@@ -14,29 +14,29 @@
 
 | Module Category | Component / Module | Status | File Path | One-Line Note |
 |---|---|---|---|---|
-| **Rankers** | Sparse Power Iteration HITS | **DONE** | [`src/rankers/hits.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/rankers/hits.py) | Full sparse power iteration with convergence tracking and SVD eigengap calculation. |
-| **Rankers** | PageRank Baseline | **DONE** | [`src/rankers/pagerank.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/rankers/pagerank.py) | Sparse power iteration with damping $\alpha=0.85$ and exact dangling node mass redistribution. |
-| **Rankers** | SALSA Baseline | **DONE** | [`src/rankers/salsa.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/rankers/salsa.py) | Bipartite random walk with ergodic teleport for disconnected components. |
-| **Rankers** | In-Degree Centrality | **DONE** | [`src/rankers/indegree.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/rankers/indegree.py) | Normalized column-sum in-degree baseline ($O(\|E\|)$ time). |
-| **Rankers / Defenses** | Randomized HITS (D1) | **DONE** | [`src/rankers/randomized_hits.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/rankers/randomized_hits.py) | Damped authority/hub power iteration with uniform jump reset $\epsilon=0.15$ (Ng et al. 2001). |
-| **Rankers / Defenses** | Subspace HITS (D1) | **DONE** | [`src/rankers/subspace_hits.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/rankers/subspace_hits.py) | Spectral projection across top-$k$ singular vectors to prevent single-community takeover. |
-| **Data Loaders** | SNAP Graph Loader | **DONE** | [`src/data/loader.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/data/loader.py) | Downloads and loads real SNAP web graphs (wiki-Vote, web-Stanford, web-NotreDame). |
-| **Data Loaders** | WEBSPAM-UK2006 Loader | **PARTIAL** | [`src/data/loader.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/data/loader.py) | Official human/domain labels downloaded & parsed (8,415 hosts; explicit undecided handling); raw webgraph pending BVGraph conversion. |
-| **Data Generators** | Synthetic Graph Generators | **DONE** | [`src/data/synthetic.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/data/synthetic.py) | Barabasi-Albert (scale-free), Erdos-Renyi, and SBM with planted dense bipartite communities. |
-| **Data Subsets** | Kleinberg Base-Set Builder | **DONE** | [`src/data/base_set.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/data/base_set.py) | Query root set sampling ($|R| \approx 100-200$), out-link expansion, and max 50 in-link capping. |
-| **Attacks** | A1: Single Fake Hub | **DONE** | [`src/attacks/a1_single_fake_hub.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/attacks/a1_single_fake_hub.py) | Injects 1 fake node with 1 direct edge to target. |
-| **Attacks** | A2: Hub Farm | **DONE** | [`src/attacks/a2_hub_farm.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/attacks/a2_hub_farm.py) | Injects $p$ fake hub nodes each linking directly to target. |
-| **Attacks** | A3: Bipartite Block | **DONE** | [`src/attacks/a3_bipartite_block.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/attacks/a3_bipartite_block.py) | Injects $K_{p, q}$ bipartite clique containing target and collateral fake authorities. |
-| **Attacks** | A4: Hub Inflation | **DONE** | [`src/attacks/a4_hub_inflation.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/attacks/a4_hub_inflation.py) | Fake hubs link to target AND top legitimate authorities to inflate hub weights. |
-| **Attacks** | A5: Cross-Score Coupling | **DONE** | [`src/attacks/a5_cross_score.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/attacks/a5_cross_score.py) | Hub inflation combined with reciprocal cross-links among attacker cluster. |
-| **Attacks** | A6: Greedy Gradient Edge Choice | **DONE** | [`src/attacks/a6_greedy_gradient.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/attacks/a6_greedy_gradient.py) | Ranks edge additions by $\partial \sigma_1 / \partial A_{ij} = h_i a_j$ with candidate list re-verification. |
-| **Defenses** | D2: Bharat-Henzinger Edge Weighting | **DONE** | [`src/defenses/d2_bharat_henzinger.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/defenses/d2_bharat_henzinger.py) | Down-weights multiple edges between the same source and destination clusters ($1/m$). |
-| **Defenses** | D3: Hub-Contribution Capping | **DONE** | [`src/defenses/d3_hub_capping.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/defenses/d3_hub_capping.py) | Caps max hub weight contribution to any authority at $10\%$ of total hub mass. |
-| **Defenses** | D4: Wu-Davison Link-Farm Reweighting | **DONE** | [`src/defenses/d4_wu_davison.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/defenses/d4_wu_davison.py) | Detects and penalizes hubs sharing suspiciously high Jaccard out-link overlap. |
-| **Defenses** | D5: Trust-Based HITS | **DONE** | [`src/defenses/d5_trust_hits.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/defenses/d5_trust_hits.py) | Injects TrustRank seed prior in jump term; cuts authority derived from zero-trust hubs. |
-| **Evaluation** | Metrics & Correlation | **DONE** | [`src/eval/metrics.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/eval/metrics.py) | Rank gain, score amplification, top-k entry, NDCG@k, Jaccard@k, Kendall tau, fake share. |
-| **Evaluation** | Statistical Confidence Testing | **DONE** | [`src/eval/stats.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/eval/stats.py) | Non-parametric percentile bootstrap 95% CIs and Wilcoxon signed-rank paired tests. |
-| **WEBSPAM Eval** | Spam Host Classification / Spam@k | **PARTIAL** | [`src/data/loader.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/data/loader.py) | Labels loaded and categorized; full AUC / spam@k evaluation pending complete hostgraph edge dump. |
+| **Rankers** | Sparse Power Iteration HITS | **DONE** | [`src/rankers/hits.py`](../src/rankers/hits.py) | Full sparse power iteration with convergence tracking and SVD eigengap calculation. |
+| **Rankers** | PageRank Baseline | **DONE** | [`src/rankers/pagerank.py`](../src/rankers/pagerank.py) | Sparse power iteration with damping $\alpha=0.85$ and exact dangling node mass redistribution. |
+| **Rankers** | SALSA Baseline | **DONE** | [`src/rankers/salsa.py`](../src/rankers/salsa.py) | Bipartite random walk with ergodic teleport for disconnected components. |
+| **Rankers** | In-Degree Centrality | **DONE** | [`src/rankers/indegree.py`](../src/rankers/indegree.py) | Normalized column-sum in-degree baseline ($O(\|E\|)$ time). |
+| **Rankers / Defenses** | Randomized HITS (D1) | **DONE** | [`src/rankers/randomized_hits.py`](../src/rankers/randomized_hits.py) | Damped authority/hub power iteration with uniform jump reset $\epsilon=0.15$ (Ng et al. 2001). |
+| **Rankers / Defenses** | Subspace HITS (D1) | **DONE** | [`src/rankers/subspace_hits.py`](../src/rankers/subspace_hits.py) | Spectral projection across top-$k$ singular vectors to prevent single-community takeover. |
+| **Data Loaders** | SNAP Graph Loader | **DONE** | [`src/data/loader.py`](../src/data/loader.py) | Downloads and loads real SNAP web graphs (wiki-Vote, web-Stanford, web-NotreDame). |
+| **Data Loaders** | WEBSPAM-UK2006 Loader | **PARTIAL** | [`src/data/loader.py`](../src/data/loader.py) | Official human/domain labels downloaded & parsed (8,415 hosts; explicit undecided handling); raw webgraph pending BVGraph conversion. |
+| **Data Generators** | Synthetic Graph Generators | **DONE** | [`src/data/synthetic.py`](../src/data/synthetic.py) | Barabasi-Albert (scale-free), Erdos-Renyi, and SBM with planted dense bipartite communities. |
+| **Data Subsets** | Kleinberg Base-Set Builder | **DONE** | [`src/data/base_set.py`](../src/data/base_set.py) | Query root set sampling ($|R| \approx 100-200$), out-link expansion, and max 50 in-link capping. |
+| **Attacks** | A1: Single Fake Hub | **DONE** | [`src/attacks/a1_single_fake_hub.py`](../src/attacks/a1_single_fake_hub.py) | Injects 1 fake node with 1 direct edge to target. |
+| **Attacks** | A2: Hub Farm | **DONE** | [`src/attacks/a2_hub_farm.py`](../src/attacks/a2_hub_farm.py) | Injects $p$ fake hub nodes each linking directly to target. |
+| **Attacks** | A3: Bipartite Block | **DONE** | [`src/attacks/a3_bipartite_block.py`](../src/attacks/a3_bipartite_block.py) | Injects $K_{p, q}$ bipartite clique containing target and collateral fake authorities. |
+| **Attacks** | A4: Hub Inflation | **DONE** | [`src/attacks/a4_hub_inflation.py`](../src/attacks/a4_hub_inflation.py) | Fake hubs link to target AND top legitimate authorities to inflate hub weights. |
+| **Attacks** | A5: Cross-Score Coupling | **DONE** | [`src/attacks/a5_cross_score.py`](../src/attacks/a5_cross_score.py) | Hub inflation combined with reciprocal cross-links among attacker cluster. |
+| **Attacks** | A6: Greedy Gradient Edge Choice | **DONE** | [`src/attacks/a6_greedy_gradient.py`](../src/attacks/a6_greedy_gradient.py) | Ranks edge additions by $\partial \sigma_1 / \partial A_{ij} = h_i a_j$ with candidate list re-verification. |
+| **Defenses** | D2: Bharat-Henzinger Edge Weighting | **DONE** | [`src/defenses/d2_bharat_henzinger.py`](../src/defenses/d2_bharat_henzinger.py) | Down-weights multiple edges between the same source and destination clusters ($1/m$). |
+| **Defenses** | D3: Hub-Contribution Capping | **DONE** | [`src/defenses/d3_hub_capping.py`](../src/defenses/d3_hub_capping.py) | Caps max hub weight contribution to any authority at $10\%$ of total hub mass. |
+| **Defenses** | D4: Wu-Davison Link-Farm Reweighting | **DONE** | [`src/defenses/d4_wu_davison.py`](../src/defenses/d4_wu_davison.py) | Detects and penalizes hubs sharing suspiciously high Jaccard out-link overlap. |
+| **Defenses** | D5: Trust-Based HITS | **DONE** | [`src/defenses/d5_trust_hits.py`](../src/defenses/d5_trust_hits.py) | Injects TrustRank seed prior in jump term; cuts authority derived from zero-trust hubs. |
+| **Evaluation** | Metrics & Correlation | **DONE** | [`src/eval/metrics.py`](../src/eval/metrics.py) | Rank gain, score amplification, top-k entry, NDCG@k, Jaccard@k, Kendall tau, fake share. |
+| **Evaluation** | Statistical Confidence Testing | **DONE** | [`src/eval/stats.py`](../src/eval/stats.py) | Non-parametric percentile bootstrap 95% CIs and Wilcoxon signed-rank paired tests. |
+| **WEBSPAM Eval** | Spam Host Classification / Spam@k | **PARTIAL** | [`src/data/loader.py`](../src/data/loader.py) | Labels loaded and categorized; full AUC / spam@k evaluation pending complete hostgraph edge dump. |
 | **Stretch** | Game-Theoretic Attacker-Defender Loop | **PENDING** | - | Iterative adversarial equilibrium (scheduled for final stretch). |
 | **Stretch** | Closed-Form Spectral Robustness Bound | **PENDING** | - | Derivation of exact lower bound on attacker budget $B^*$ to achieve top-1. |
 | **Stretch** | WEBSPAM-UK2007 Classifier | **PENDING** | - | Multi-feature spam classifier on UK-2007 corpus. |
@@ -107,15 +107,15 @@ Values report **Mean and [95% Percentile Bootstrap Confidence Interval]**:
 | **SNAP wiki-Vote** | 7,115 | 103,689 | 0.657s (23 it) | 0.580s (23 it) | 0.643s (53 it) | 18.17 MB | 6,158.51 |
 | **SNAP web-Stanford BaseSet** | 1,686 | 13,849 | 0.110s (23 it) | 0.155s (81 it) | 0.114s (200 it) | 2.45 MB | 2,518.81 |
 
-*Hardware Used:* Intel Core i7-12700H (16 logical cores @ 2.7 GHz base), 16 GB DDR5 RAM, Windows 11 64-bit, Python 3.12.5, SciPy 1.12.0 sparse linear algebra.
+*Hardware Used:* 12th Gen Intel Core i5-12500H (12 physical cores, 16 logical processors), 16 GB RAM, Windows 11 64-bit, Python 3.12.5, SciPy 1.12.0 sparse linear algebra. Peak memory measured via Python heap tracemalloc (0.50 - 18.17 MB) and process RSS via psutil (108 - 183 MB).
 
 ---
 
 ## 6. Hypothesis Status
 
 ### Hypothesis H1: "On random-like graphs HITS ~ in-degree"
-- **Status: SUPPORTED.**
-- **Evidence:** On Erdos-Renyi graphs ($G(1000, 0.005)$), Kendall's rank correlation between HITS authority scores and simple in-degree is $\tau = 0.912$ ($p < 10^{-15}$). In contrast, on heavy-tailed scale-free graphs (Barabasi-Albert) and planted community graphs, $\tau$ drops to $0.481$, because HITS concentrates authority mass onto dense mutual clusters rather than isolated high in-degree stars.
+- **Status: SUPPORTED (Preliminary).**
+- **Evidence:** On Erdos-Renyi graphs ($G(1000, 0.005)$), Kendall's rank correlation between clean HITS authority scores and simple in-degree is $\tau = 0.746$ ($p = 7.99 \times 10^{-244}$; Spearman $\rho = 0.887$). In contrast, on heavy-tailed scale-free graphs (Barabasi-Albert, BA-1000), $\tau$ drops to $0.515$ ($p = 2.50 \times 10^{-115}$; Spearman $\rho = 0.692$), and on planted community SBM graphs $\tau = 0.533$ ($p = 1.39 \times 10^{-103}$), confirming that HITS authority aligns closely with in-degree on homogeneous random graphs but diverges on heavy-tailed graphs with dense local communities. (Note: Progress Report v1 erroneously cited $\tau=0.912$ due to an uncorrected row transposition).
 - **Limits:** In sparse disconnected graphs, nodes with identical in-degree receive distinct HITS scores depending on whether their in-neighbors link to other high-degree nodes.
 
 ### Hypothesis H2: "Hub farm of $p$ fake hubs only takes over top HITS vectors when $p \sim \sigma_1^2$ (sharp jump; PageRank gains smooth)"
@@ -152,10 +152,10 @@ Values report **Mean and [95% Percentile Bootstrap Confidence Interval]**:
    - *Deviation:* To keep mid-project experiments 100% offline and runnable on a laptop, we ran all mid-term experiments on three real SNAP web graphs (`wiki-Vote`, `web-Stanford`, `web-NotreDame`) and synthetic benchmarks.
 2. **SALSA Convergence on Multi-Component Base Sets:**
    - *Issue:* In disconnected bipartite components, pure SALSA transition matrices contain multiple unit eigenvalues, causing standard power iteration to oscillate or stall without convergence (as observed on `web-Stanford` where it hit max iterations 200).
-   - *Solution:* Implemented an ergodic teleport parameter ($\epsilon = 10^{-4}$) in [`src/rankers/salsa.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/rankers/salsa.py), guaranteeing strict positive Perron-Frobenius convergence.
+   - *Solution:* Implemented an ergodic teleport parameter ($\epsilon = 10^{-4}$) in [`src/rankers/salsa.py`](../src/rankers/salsa.py), guaranteeing strict positive Perron-Frobenius convergence.
 3. **Power Iteration Metric Bounds with Injected Nodes:**
    - *Issue:* Standard NDCG and Jaccard functions failed when computing metrics between clean vectors of length $N$ and attacked vectors of length $N + k_{fake}$.
-   - *Solution:* Updated [`src/eval/metrics.py`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/src/eval/metrics.py) to assign zero ground-truth relevance to injected attacker nodes.
+   - *Solution:* Updated [`src/eval/metrics.py`](../src/eval/metrics.py) to assign zero ground-truth relevance to injected attacker nodes.
 
 ---
 
@@ -216,13 +216,13 @@ python scripts/generate_figures.py
 ### Manifest of Generated Artifacts for the 4-Page PDF
 
 #### Figures (`figures/`)
-- [`figures/cost_curves_rank_gain.png`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/figures/cost_curves_rank_gain.png): 300 DPI dual-panel chart of Target Rank Gain vs Attacker Budget on Synthetic BA-500 and SNAP wiki-Vote base set across HITS, PageRank, SALSA, and In-degree.
-- [`figures/h2_spectral_takeover.png`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/figures/h2_spectral_takeover.png): 300 DPI dual-panel chart of Target Authority and Target Rank vs Farm Size $p$, with the theoretical threshold $\sigma_1^2$ annotated illustrating the abrupt bifurcation of HITS vs smooth PageRank.
-- [`figures/defenses_tradeoff.png`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/figures/defenses_tradeoff.png): 300 DPI Pareto plot showing Attack Success Reduction (%) vs Clean Graph False Demotion across defenses D1-D5.
-- [`figures/architecture.png`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/figures/architecture.png) and [`figures/architecture.svg`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/figures/architecture.svg): End-to-end system architecture diagram clearly highlighting BUILT vs PENDING components.
+- [`figures/cost_curves_rank_gain.png`](../figures/cost_curves_rank_gain.png): 300 DPI dual-panel chart of Target Rank Gain vs Attacker Budget on Synthetic BA-500 and SNAP wiki-Vote base set across HITS, PageRank, SALSA, and In-degree.
+- [`figures/h2_spectral_takeover.png`](../figures/h2_spectral_takeover.png): 300 DPI dual-panel chart of Target Authority and Target Rank vs Farm Size $p$, with the theoretical threshold $\sigma_1^2$ annotated illustrating the abrupt bifurcation of HITS vs smooth PageRank.
+- [`figures/defenses_tradeoff.png`](../figures/defenses_tradeoff.png): 300 DPI Pareto plot showing Attack Success Reduction (%) vs Clean Graph False Demotion across defenses D1-D5.
+- [`figures/architecture.png`](../figures/architecture.png) and [`figures/architecture.svg`](../figures/architecture.svg): End-to-end system architecture diagram clearly highlighting BUILT vs PENDING components.
 
 #### Raw Data Tables (`results/`)
-- [`results/clean_baselines.csv`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/results/clean_baselines.csv): Runtime, peak memory, iterations, and eigengap across 5 benchmark graphs.
-- [`results/cost_curves.csv`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/results/cost_curves.csv): Complete 1,512-row dataset with ranks, gains, amplifications, Jaccard, NDCG, and Kendall tau.
-- [`results/h2_experiment.csv`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/results/h2_experiment.csv): Step-by-step spectral takeover measurements around $p \approx \sigma_1^2$.
-- [`results/defenses_eval.csv`](file:///c:/Users/shris/OneDrive/Desktop/LinkRank_Under_Attack/results/defenses_eval.csv): Attack reduction and false demotion scores for D1-D5.
+- [`results/clean_baselines.csv`](../results/clean_baselines.csv): Runtime, peak memory, iterations, and eigengap across 5 benchmark graphs.
+- [`results/cost_curves.csv`](../results/cost_curves.csv): Complete 1,512-row dataset with ranks, gains, amplifications, Jaccard, NDCG, and Kendall tau.
+- [`results/h2_experiment.csv`](../results/h2_experiment.csv): Step-by-step spectral takeover measurements around $p \approx \sigma_1^2$.
+- [`results/defenses_eval.csv`](../results/defenses_eval.csv): Attack reduction and false demotion scores for D1-D5.

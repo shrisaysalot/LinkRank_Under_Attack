@@ -1,5 +1,5 @@
 """Evaluation metrics for measuring adversarial vulnerability and ranking fidelity."""
-from typing import List, Set, Union
+from typing import List, Set, Union, Optional
 import numpy as np
 from scipy import stats
 
@@ -91,3 +91,38 @@ def defense_attack_success_reduction(gain_nodef: float, gain_def: float) -> floa
     if gain_nodef <= 0:
         return 1.0 if gain_def <= 0 else 0.0
     return float(1.0 - (gain_def / gain_nodef))
+
+
+def spearman_rho(scores1: np.ndarray, scores2: np.ndarray) -> float:
+    """Computes Spearman's rank correlation coefficient between two score vectors on common nodes."""
+    min_len = min(len(scores1), len(scores2))
+    if min_len < 2:
+        return 1.0
+    rho, _ = stats.spearmanr(scores1[:min_len], scores2[:min_len])
+    return float(rho) if not np.isnan(rho) else 0.0
+
+
+def normalized_rank_gain(clean_scores: np.ndarray, attacked_scores: np.ndarray, target_idx: int) -> float:
+    """Computes normalized rank gain: (rank_clean - rank_attacked) / (rank_clean - 1).
+
+    Returns 1.0 if target reached rank 1, 0.0 if no change, negative if demoted.
+    If target was already rank 1 in clean graph, returns 0.0.
+    """
+    r_clean = compute_rank(clean_scores, target_idx)
+    r_attacked = compute_rank(attacked_scores, target_idx)
+    if r_clean <= 1:
+        return 0.0
+    return float((r_clean - r_attacked) / (r_clean - 1.0))
+
+
+def b_star_at_k(budgets: List[int], ranks: List[int], k: int = 10) -> Optional[int]:
+    """Computes B*(k): the minimum budget B at which target rank <= k.
+
+    Returns None if target never achieves rank <= k across evaluated budgets.
+    """
+    pairs = sorted(zip(budgets, ranks), key=lambda x: x[0])
+    for b, r in pairs:
+        if r <= k:
+            return int(b)
+    return None
+
