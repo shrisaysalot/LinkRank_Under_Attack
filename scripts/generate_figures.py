@@ -108,38 +108,40 @@ def plot_h2_experiment():
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5))
 
     # Left: Target Authority Score vs Hub Farm Size p
-    ax1.plot(df["p_farm_size"], df["hits_score"], label="HITS Authority", color="#D9534F", marker="o", linewidth=2.5)
-    ax1.plot(df["p_farm_size"], df["pagerank_score"] * 10.0, label="PageRank Score (x10)", color="#337AB7", marker="s", linestyle="--", linewidth=2.0)
-    ax1.plot(df["p_farm_size"], df["salsa_score"], label="SALSA Authority", color="#5CB85C", marker="^", linestyle=":", linewidth=2.0)
+    ax1.plot(df["p_farm_size"], df["hits_score"], label="HITS Authority", color="#D9534F", marker="o", linewidth=2.6)
+    ax1.plot(df["p_farm_size"], df["pagerank_score"] * 10.0, label="PageRank Score (x10)", color="#337AB7", marker="s", linestyle="--", linewidth=2.2)
+    ax1.plot(df["p_farm_size"], df["salsa_score"], label="SALSA Authority", color="#5CB85C", marker="^", linestyle=":", linewidth=2.2)
 
     ax1.axvline(x=sigma1_sq, color="#292b2c", linestyle="--", linewidth=2.0, label=rf"Theoretical $\sigma_1^2 \approx {sigma1_sq:.1f}$")
     ax1.annotate(
-        r"Takeover Jump ($p \approx \sigma_1^2$)",
-        xy=(sigma1_sq, df["hits_score"].max() * 0.5),
-        xytext=(sigma1_sq + 4, df["hits_score"].max() * 0.4),
-        arrowprops=dict(facecolor="black", shrink=0.08, width=1.5, headwidth=7),
+        r"Takeover Jump ($p \approx 0.82 \sigma_1^2$)",
+        xy=(sigma1_sq * 0.82, df["hits_score"].max() * 0.45),
+        xytext=(sigma1_sq * 0.82 - 25, df["hits_score"].max() * 0.60),
+        arrowprops=dict(facecolor="black", shrink=0.08, width=1.8, headwidth=7),
         fontweight="bold",
-        fontsize=11
+        fontsize=12
     )
 
-    ax1.set_title("Target Authority Score vs Farm Size p (Preliminary)", fontweight="bold")
-    ax1.set_xlabel(r"Hub Farm Size $p$ (Nodes & Edges Added)")
-    ax1.set_ylabel("Target Authority Score")
+    ax1.set_title("Target Authority Score vs Farm Size p (Preliminary)", fontweight="bold", fontsize=13.5)
+    ax1.set_xlabel(r"Hub Farm Size $p$ (Nodes & Edges Added)", fontsize=12.5)
+    ax1.set_ylabel("Target Authority Score", fontsize=12.5)
+    ax1.tick_params(labelsize=11.5)
     ax1.grid(True, linestyle="--", alpha=0.5)
-    ax1.legend(loc="upper left")
+    ax1.legend(loc="upper left", fontsize=11)
 
     # Right: Target Rank vs p
-    ax2.plot(df["p_farm_size"], df["hits_rank"], label="HITS Rank", color="#D9534F", marker="o", linewidth=2.5)
-    ax2.plot(df["p_farm_size"], df["pagerank_rank"], label="PageRank Rank", color="#337AB7", marker="s", linestyle="--", linewidth=2.0)
-    ax2.plot(df["p_farm_size"], df["salsa_rank"], label="SALSA Rank", color="#5CB85C", marker="^", linestyle=":", linewidth=2.0)
+    ax2.plot(df["p_farm_size"], df["hits_rank"], label="HITS Rank", color="#D9534F", marker="o", linewidth=2.6)
+    ax2.plot(df["p_farm_size"], df["pagerank_rank"], label="PageRank Rank", color="#337AB7", marker="s", linestyle="--", linewidth=2.2)
+    ax2.plot(df["p_farm_size"], df["salsa_rank"], label="SALSA Rank", color="#5CB85C", marker="^", linestyle=":", linewidth=2.2)
     ax2.axvline(x=sigma1_sq, color="#292b2c", linestyle="--", linewidth=2.0, label=rf"Threshold $\sigma_1^2$")
 
-    ax2.set_title("Target Rank vs Farm Size p (Preliminary - H2 Bifurcation)", fontweight="bold")
-    ax2.set_xlabel(r"Hub Farm Size $p$")
-    ax2.set_ylabel("Target Rank (1 = Top Authority)")
+    ax2.set_title("Target Rank vs Farm Size p (Preliminary - H2 Bifurcation)", fontweight="bold", fontsize=13.5)
+    ax2.set_xlabel(r"Hub Farm Size $p$", fontsize=12.5)
+    ax2.set_ylabel("Target Rank (1 = Top Authority)", fontsize=12.5)
+    ax2.tick_params(labelsize=11.5)
     ax2.invert_yaxis()
     ax2.grid(True, linestyle="--", alpha=0.5)
-    ax2.legend(loc="lower left")
+    ax2.legend(loc="lower left", fontsize=11)
 
     out_png = FIGURES_DIR / "h2_spectral_takeover.png"
     plt.savefig(out_png, dpi=300, bbox_inches="tight")
@@ -216,7 +218,7 @@ def plot_defenses():
 
 
 def generate_architecture_diagram():
-    fig, ax = plt.subplots(figsize=(14, 8))
+    fig, ax = plt.subplots(figsize=(15, 8.5))
     ax.set_xlim(0, 14)
     ax.set_ylim(0, 8)
     ax.axis("off")
@@ -234,15 +236,15 @@ def generate_architecture_diagram():
             boxstyle="round,pad=0.2,rounding_size=0.3",
             facecolor=fill,
             edgecolor=border,
-            linewidth=2.0
+            linewidth=2.2
         )
         ax.add_patch(box)
         badge_color = "#155724" if status == "BUILT" else "#856404"
-        ax.text(x + 0.2, y + h - 0.4, title, fontsize=12, fontweight="bold", color="#1F2D3D")
-        ax.text(x + w - 0.2, y + h - 0.4, f"[{status}]", fontsize=10, fontweight="bold", color=badge_color, ha="right")
+        ax.text(x + 0.2, y + h - 0.42, title, fontsize=13.5, fontweight="bold", color="#1F2D3D")
+        ax.text(x + w - 0.2, y + h - 0.42, f"[{status}]", fontsize=11, fontweight="bold", color=badge_color, ha="right")
 
         for idx, item in enumerate(items):
-            ax.text(x + 0.25, y + h - 0.8 - idx * 0.35, f"• {item}", fontsize=10, color="#333333")
+            ax.text(x + 0.25, y + h - 0.88 - idx * 0.38, f"• {item}", fontsize=11.2, color="#222222")
 
     draw_box(0.5, 4.3, 3.8, 3.2, "1. Data Ingestion", [
         "SNAP wiki-Vote (7,115 n)",

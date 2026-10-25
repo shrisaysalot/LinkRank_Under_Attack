@@ -79,6 +79,23 @@ def test_d3_hub_capping(sample_graph):
     assert np.all(res.scores >= 0)
 
 
+def test_d3_hub_capping_binds_on_dominant_hub():
+    """Verify that D3 hub capping binds when one hub contributes > 10% of total hub score."""
+    from src.rankers.hits import hits
+    G = nx.DiGraph()
+    for i in range(1, 10):
+        G.add_edge(0, i)  # dominant hub 0
+    G.add_edge(10, 1)     # second small hub
+
+    res_plain = hits(G)
+    res_d3 = hub_capped_hits(G, cap_fraction=0.10)
+    assert res_d3.converged
+    # Plain hub 0 holds > 80% of hub mass, well above 10% cap
+    assert np.max(res_plain.hub_scores) / np.sum(res_plain.hub_scores) > 0.10
+    # Capping must actively bind and change authority scores
+    assert not np.allclose(res_plain.scores, res_d3.scores, atol=1e-4)
+
+
 def test_d4_wu_davison(sample_graph):
     res_d4 = wu_davison_hits(sample_graph)
     assert res_d4.converged

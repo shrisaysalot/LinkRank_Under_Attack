@@ -246,7 +246,7 @@ def generate_html_source():
 
   <h2>1. Executive Summary & Problem Scope</h2>
   <p>
-    Hyperlink-Induced Topic Search (HITS) identifies authoritative web resources by computing dominant eigenvectors of <i>A</i><sup>T</sup><i>A</i> (authority) and <i>A</i><i>A</i><sup>T</sup> (hub). Unlike PageRank, which incorporates uniform teleportation (&alpha; = 0.85) to diffuse random walk probability mass globally, Kleinberg's mutual reinforcement model exhibits acute sensitivity to adversarial link manipulation. This study provides an empirical benchmark evaluating HITS vulnerability across 6 threat topologies (A1&ndash;A6) and assesses 5 algorithmic defense families (D1&ndash;D5) against PageRank, SALSA, and In-Degree baselines on synthetic topologies and SNAP web graphs.
+    Hyperlink-Induced Topic Search (HITS) identifies authoritative web resources by computing dominant eigenvectors of <i>A</i><sup>T</sup><i>A</i> (authority) and <i>A</i><i>A</i><sup>T</sup> (hub). In this study, we measure HITS vulnerability against PageRank, SALSA, and In-Degree baselines across six threat topologies (A1&ndash;A6) under a fixed edge budget <i>B</i>, and evaluate five algorithmic defense families (D1&ndash;D5) across synthetic topologies and SNAP web graphs. Rather than asserting uniform fragility, we systematically evaluate relative rank distortion, budget thresholds, and stability bounds across algorithms.
   </p>
 
   <h2>2. Implementation Status & Architecture</h2>
@@ -324,22 +324,22 @@ def generate_html_source():
           </tr>
           <tr>
             <td><strong>Automated Tests</strong></td>
-            <td>Full unit test suite (30 test cases)</td>
+            <td>Full unit test suite (31 test cases)</td>
             <td><span class="badge badge-done">DONE</span></td>
-            <td>30 passed in &lt; 4s under bare <code>pytest</code></td>
+            <td>31 passed in 1.7s under bare <code>pytest</code></td>
           </tr>
           <tr>
             <td><strong>Stretch Items</strong></td>
-            <td>Game loop (NOT STARTED), closed-form bound (PARTIAL)</td>
-            <td><span class="badge badge-partial">PARTIAL</span></td>
-            <td>Empirical <i>p</i>* &approx; 0.82 &sigma;<sub>1</sub><sup>2</sup> observed; proof pending</td>
+            <td>Game loop (NOT STARTED), closed-form bound (NOT STARTED)</td>
+            <td><span class="badge badge-notstarted">NOT STARTED</span></td>
+            <td>Formal proof NOT STARTED; only empirical <i>p</i>* &approx; 0.82 &sigma;<sub>1</sub><sup>2</sup> exists</td>
           </tr>
         </tbody>
       </table>
     </div>
     <div class="col-5">
-      <div class="figure-box">
-        <img src="{arch_img}" style="max-height: 148px;" alt="System Architecture">
+      <div class="figure-box" style="padding: 2px;">
+        <img src="{arch_img}" style="max-height: 165px; width: 100%; object-fit: contain;" alt="System Architecture">
         <div class="caption">Figure 1: End-to-end system architecture highlighting BUILT vs PENDING components.</div>
       </div>
     </div>
@@ -352,7 +352,7 @@ def generate_html_source():
   <div class="highlight-box">
     <strong>Link-Analysis Ingestion & Processing Pipeline:</strong>
     <ul style="margin: 1.5px 0 0 0;">
-      <li><strong>Graph Ingestion & Normalization:</strong> Raw SNAP edge lists (e.g., <code>web-Stanford</code>, <code>wiki-Vote</code>) and synthetic networks are ingested, deduplicated, filtered for self-loops, and mapped into contiguous zero-indexed node arrays ($0 \dots N-1$) stored as SciPy CSR/CSC sparse matrices.</li>
+      <li><strong>Graph Ingestion & Normalization:</strong> Raw SNAP edge lists (e.g., <code>web-Stanford</code>, <code>wiki-Vote</code>) and synthetic networks are ingested, deduplicated, filtered for self-loops, and mapped into contiguous zero-indexed node arrays (0..N&minus;1) stored as SciPy CSR/CSC sparse matrices.</li>
       <li><strong>Kleinberg Query Base-Set Builder:</strong> Implements Kleinberg (1999) topic base-set construction: generates a query root set <i>R</i> (|<i>R</i>| &approx; 100&ndash;200 nodes) via localized random walks, expands forward to all immediate out-neighbors (<i>S</i> = <i>R</i> &cup; <i>Out</i>(<i>R</i>)), and expands backward with strict in-link capping (at most 50 predecessors per root node) to prevent ubiquitous web portals from overwhelming graph topology.</li>
       <li><strong>Sparse Power Iteration Ranking:</strong> Computes stationary distributions via accelerated sparse matrix-vector multiplication with strict convergence threshold tol = 10<sup>&minus;8</sup> and max iterations = 200. PageRank enforces damping &alpha; = 0.85 with dangling node mass redistribution. SALSA incorporates an ergodic teleport (&epsilon; = 10<sup>&minus;4</sup>) to prevent multi-component stalls.</li>
       <li><strong>Adversarial Injection & Evaluation:</strong> Injects synthetic attacker nodes and directed edges under budget <i>B</i>. Computes ranking disruption metrics comparing clean vector <b>a</b><sub>clean</sub> against attacked vector <b>a</b><sub>att</sub> with non-parametric bootstrap confidence intervals.</li>
@@ -368,7 +368,7 @@ def generate_html_source():
   
   <h3>4a. Attack Cost Curves Across Threat Topologies (n = 60 per cell, 95% Bootstrap CIs)</h3>
   <p style="font-size: 7.2pt; margin-bottom: 2.5px;">
-    Evaluated across 4 graphs (BA-500, ER-500, SBM-500, web-Stanford base set), 3 seeds (42, 123, 456), and 5 target tiers. Metrics reported: Normalized Rank Gain (<i>r</i><sub>clean</sub> &minus; <i>r</i><sub>att</sub>) / (<i>r</i><sub>clean</sub> &minus; 1) &isin; [0, 1], Top-10 Entry Rate, and Top-20 Jaccard.
+    Evaluated across 4 graphs (BA-500, ER-500, SBM-500, web-Stanford base set), 3 seeds (42, 123, 456), and 5 targets across low/medium/random tiers. Metrics reported: Normalized Rank Gain (<i>r</i><sub>clean</sub> &minus; <i>r</i><sub>att</sub>) / (<i>r</i><sub>clean</sub> &minus; 1) &isin; [0, 1], Top-10 Entry Rate, and Top-20 Jaccard.
   </p>
   <table>
     <thead>
@@ -569,7 +569,7 @@ def generate_html_source():
         <td>1.000</td>
         <td>0.0%</td>
         <td>0.0%</td>
-        <td><strong>Exact No-Op:</strong> 10% cap never triggered on tested graphs.</td>
+        <td><strong>Exact No-Op:</strong> 10% cap never triggered on tested graphs (cause not investigated).</td>
       </tr>
       <tr>
         <td><strong>D4: Wu-Davison (Mutual)</strong></td>
@@ -578,7 +578,7 @@ def generate_html_source():
         <td>0.786</td>
         <td><strong>0.5%</strong></td>
         <td><strong>36.4%</strong></td>
-        <td>Effective on A2/A3 (69&ndash;75% red); fails on camouflaged/A6.</td>
+        <td>Effective on A2/A3 (69&ndash;75% red); fails on camouflaged farms and A6; partial on A4/A5.</td>
       </tr>
       <tr>
         <td><strong>D4b: Wu-Davison (Out-Jaccard)</strong></td>
@@ -587,7 +587,7 @@ def generate_html_source():
         <td>0.680</td>
         <td><strong>1.3%</strong></td>
         <td><strong>38.2%</strong></td>
-        <td>Effective on A2/A3 (74&ndash;85% red); fails on camouflaged/A6.</td>
+        <td>Effective on A2/A3 (74&ndash;85% red); fails on camouflaged farms and A6; partial on A4/A5.</td>
       </tr>
       <tr>
         <td><strong>D5: Trust-Based HITS</strong></td>
@@ -600,8 +600,29 @@ def generate_html_source():
       </tr>
     </tbody>
   </table>
-  <div class="highlight-box">
-    <strong>Key Defense Findings:</strong> (1) <strong>NO defense met the target criteria</strong> (&ge;50% reduction at &le;5% clean NDCG loss) across all attack topologies. (2) <strong>D3 Hub Capping is an exact no-op</strong> because no single hub accumulated &gt;10% of total hub mass. (3) <strong>Wu-Davison D4 and D4b</strong> achieve high mitigation against isolated farms (A2/A3: 69&ndash;85% reduction, 75&ndash;86% goal rate), but fail completely when attackers camouflage links or use greedy gradient additions.
+  <div class="row" style="margin-top: 1.5px;">
+    <div class="col-6">
+      <div class="highlight-box" style="font-size: 6.7pt; line-height: 1.18; padding: 2.5px 5px;">
+        <strong>Evaluation Notes & Boundary Conditions:</strong>
+        <ul style="margin: 1px 0 0 0; padding-left: 11px;">
+          <li><strong>A4b &amp; A5 Identical:</strong> A4b and A5 yield identical numbers across all 1,680 rows in <code>results/cost_curves_v2.csv</code>.</li>
+          <li><strong>A4 Spend:</strong> A4 spends only <i>c</i> edges (connecting target to <i>c</i> authorities) with ~0 effect (mean rank gain 0.17).</li>
+          <li><strong>A1 Single Edge:</strong> A1 is 1 edge, so <i>B</i> = 25 and <i>B</i> = 100 results match.</li>
+          <li><strong>Statistical Tests:</strong> Pooled Wilcoxon tests (<i>n</i> = 480) are non-independent and indicative only.</li>
+          <li><strong>Budget:</strong> Edge budget <i>B</i> counts added directed edges only.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="highlight-box" style="font-size: 6.7pt; line-height: 1.18; padding: 2.5px 5px;">
+        <strong>Key Defense Findings:</strong>
+        <ul style="margin: 1px 0 0 0; padding-left: 11px;">
+          <li><strong>Target Criteria:</strong> <strong>NO defense met target criteria</strong> (&ge;50% red., &le;5% loss) across all topologies.</li>
+          <li><strong>D3 Hub Capping:</strong> Exact no-op on tested graphs (cause not investigated; unit test confirms cap binds on toy dominant hub).</li>
+          <li><strong>Wu-Davison D4/D4b:</strong> Strong on isolated farms (A2/A3: 69&ndash;85% red., 75&ndash;86% goal rate), but fail on camouflaged farms and A6; partial on A4/A5.</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -612,13 +633,13 @@ def generate_html_source():
   <h2>4c. Hypothesis H2: Spectral Phase Transition (Preliminary)</h2>
   <div class="row" style="align-items: center;">
     <div class="col-7">
-      <div class="figure-box">
-        <img src="{h2_img}" style="max-height: 135px;" alt="H2 Spectral Takeover">
-        <div class="caption">Figure 2: HITS authority score & rank vs hub farm size <i>p</i> showing abrupt bifurcation at <i>p</i> &approx; &sigma;<sub>1</sub><sup>2</sup> vs smooth PageRank.</div>
+      <div class="figure-box" style="padding: 2px;">
+        <img src="{h2_img}" style="max-height: 160px; width: 100%; object-fit: contain;" alt="H2 Spectral Takeover">
+        <div class="caption">Figure 2: HITS authority score & rank vs hub farm size <i>p</i> showing abrupt takeover near 0.82 &sigma;<sub>1</sub><sup>2</sup> vs smooth PageRank.</div>
       </div>
     </div>
     <div class="col-5">
-      <div class="highlight-box" style="font-size: 7.3pt;">
+      <div class="highlight-box" style="font-size: 7.2pt; line-height: 1.2;">
         <strong>Empirical H2 Robustness Findings (<i>n</i> = 60 instances):</strong>
         <ul style="margin: 1.5px 0 0 0;">
           <li><strong>Upper Bound Hold Rate:</strong> &sigma;<sub>1</sub><sup>2</sup> &ge; max in-degree holds in <strong>100.0%</strong> of instances (60/60).</li>
@@ -626,7 +647,7 @@ def generate_html_source():
             <br>&bull; Top-10 takeover: <i>p</i>*(10) / &sigma;<sub>1</sub><sup>2</sup> = <strong>0.817</strong> [0.751, 0.879] (<i>n</i> = 60).
             <br>&bull; Top-1 takeover: <i>p</i>*(1) / &sigma;<sub>1</sub><sup>2</sup> = <strong>0.873</strong> [0.819, 0.923] (<i>n</i> = 60).</li>
           <li><strong>Abrupt Bifurcation:</strong> HITS exhibits an abrupt single-step jump in <strong>63.3%</strong> of instances (38/60) with mean single-step jump of <strong>69.7 ranks</strong> (median 64.0) vs <strong>16.9 ranks</strong> for PageRank.</li>
-          <li><strong>Counterexamples (36.7%):</strong> In 22/60 runs (12 on ER, 7 on BA, 3 on Stanford), jumps were gradual due to narrow eigengaps.</li>
+          <li><strong>Counterexamples (36.7%):</strong> In 22/60 runs (12 on ER, 7 on BA, 3 on Stanford), jumps were gradual (cause not investigated).</li>
         </ul>
       </div>
     </div>
@@ -766,7 +787,7 @@ def generate_html_source():
         <strong>Status of Stretch Objectives:</strong>
         <ul style="margin: 1.5px 0 0 0;">
           <li><strong>Game-Theoretic Loop:</strong> <span class="badge badge-notstarted">NOT STARTED</span>. Iterative attacker-defender equilibrium model scheduled for final sprint.</li>
-          <li><strong>Closed-Form Spectral Bound:</strong> <span class="badge badge-partial">PARTIAL</span>. Empirical takeover at <i>p</i>* &approx; 0.82 &sigma;<sub>1</sub><sup>2</sup> observed across 60 instances; formal closed-form mathematical proof and generalized <i>B</i>*(<i>k</i>) bound are in progress.</li>
+          <li><strong>Closed-Form Spectral Bound:</strong> <span class="badge badge-notstarted">NOT STARTED</span>. Formal proof NOT STARTED; only the empirical <i>p</i>* of about 0.82 &sigma;<sub>1</sub><sup>2</sup> exists across 60 evaluated instances.</li>
           <li><strong>WEBSPAM-UK2007 Classifier:</strong> <span class="badge badge-notstarted">NOT STARTED</span>. Dependent on Milestone 1 host graph ingestion.</li>
         </ul>
       </div>
@@ -775,7 +796,7 @@ def generate_html_source():
 
   <h2>7. Team Contributions</h2>
   <p style="font-size: 7.3pt; margin-bottom: 2.5px;">
-    The project functional areas and contributions confirmed across all team members are detailed below:
+    Confirmed functional contributions across all team members (see <code>git shortlog</code> for commit history):
   </p>
   <table>
     <thead>
@@ -803,22 +824,22 @@ def generate_html_source():
   <h2>8. Other Information & Disclosures</h2>
   <div class="row">
     <div class="col-6">
-      <div class="highlight-box" style="font-size: 7.2pt;">
+      <div class="highlight-box" style="font-size: 7.0pt; line-height: 1.2;">
         <strong>Corrections vs Version 1 of Progress Report:</strong>
         <ul style="margin: 1.5px 0 0 0;">
           <li><strong>CPU Model:</strong> Probed actual hardware as 12th Gen Intel Core i5-12500H (12 cores, 16 threads), correcting unverified v1 claim.</li>
           <li><strong>H1 Correlation:</strong> Verified clean ER-1000 &tau; = 0.746 (<i>p</i> = 7.99 &times; 10<sup>&minus;244</sup>; &rho; = 0.887), correcting unverified v1 claim of 0.912.</li>
           <li><strong>Defense Metric Bug:</strong> Resolved metric defect that returned 1.0 on zero-gain cells, correctly assessing undefended reduction as 0.0%.</li>
-          <li><strong>Defense D2 & D3:</strong> Fixed D2 WCC no-op with true domain weighting; empirically verified D3 Hub Capping as an exact no-op on tested graphs.</li>
+          <li><strong>Defense D2 & D3:</strong> Fixed D2 WCC with true domain weighting; empirically verified D3 Hub Capping as an exact no-op on tested graphs (cause not investigated; unit test confirms cap binds on toy graph where one hub exceeds 10%).</li>
           <li><strong>Attack Definitions:</strong> Restored proposal A4 (single fake page) and A5 (fake hubs with no cross-links), retaining multi-hub variants as A4b/A5b.</li>
         </ul>
       </div>
     </div>
     <div class="col-6">
-      <div class="highlight-box" style="font-size: 7.2pt;">
+      <div class="highlight-box" style="font-size: 7.0pt; line-height: 1.2;">
         <strong>Verification, Reproduction & Ethics:</strong>
         <ul style="margin: 1.5px 0 0 0;">
-          <li><strong>Automated Test Suite:</strong> <strong>30 passed</strong> unit tests in 11.4s under bare <code>pytest -v</code>, asserting ranker correctness vs NetworkX (&lt; 10<sup>&minus;8</sup>).</li>
+          <li><strong>Automated Test Suite:</strong> <strong>31 passed</strong> unit tests in 1.7s under bare <code>pytest -v</code>, asserting ranker correctness vs NetworkX (&lt; 10<sup>&minus;8</sup>).</li>
           <li><strong>Reproduction Commands:</strong> Fully reproducible via relative scripts:
             <br>&bull; <code>python scripts/download_data.py</code>
             <br>&bull; <code>python scripts/run_clean_baselines.py</code>
