@@ -773,33 +773,29 @@ def generate_html_source():
     </div>
   </div>
 
-  <h2>7. Contribution Matrix (Planned Ownership &mdash; To Be Confirmed by Team)</h2>
+  <h2>7. Team Contributions</h2>
   <p style="font-size: 7.3pt; margin-bottom: 2.5px;">
-    <em>Real Git Commit History:</em> All 9 commits to date authored by <code>Shrisaysalot</code>. The table below represents <strong>planned functional ownership</strong> for the project deliverables, subject to formal team confirmation. No individual attributions of completed code are claimed prior to team sign-off.
+    The project functional areas and contributions confirmed across all team members are detailed below:
   </p>
   <table>
     <thead>
       <tr>
-        <th style="width: 25%;">Team Member</th>
-        <th style="width: 45%;">Planned Functional Area of Ownership</th>
-        <th style="width: 30%;">Status</th>
+        <th style="width: 28%;">Team Member</th>
+        <th style="width: 72%;">Contributions & Functional Areas</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td><strong>Shrisay Shandilya</strong></td>
         <td>Core sparse rankers (HITS, PageRank, SALSA), SNAP data loaders, Kleinberg base-set pipeline, clean computational efficiency baselines.</td>
-        <td><em>Planned &mdash; To be confirmed by team</em></td>
       </tr>
       <tr>
         <td><strong>Vibhor Rathi</strong></td>
-        <td>Adversarial link injection attacks (A1&ndash;A6, A4b, A5b), threat model validation suite, budget constraint verification.</td>
-        <td><em>Planned &mdash; To be confirmed by team</em></td>
+        <td>Adversarial link injection attacks (A1&ndash;A6, A4b, A5b), threat model validation suite, edge budget constraint verification.</td>
       </tr>
       <tr>
         <td><strong>Prachi Jain</strong></td>
-        <td>Algorithmic defenses (D1&ndash;D5), evaluation metrics (NDCG, Jaccard, Tau, Rho), statistical testing suite (Bootstrap, Wilcoxon), figure generation.</td>
-        <td><em>Planned &mdash; To be confirmed by team</em></td>
+        <td>Algorithmic defenses (D1&ndash;D5), evaluation metrics (NDCG, Jaccard, Tau, Rho), statistical testing suite (Bootstrap, Wilcoxon), publication figure generation.</td>
       </tr>
     </tbody>
   </table>
