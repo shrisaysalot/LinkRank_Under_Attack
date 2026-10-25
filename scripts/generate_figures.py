@@ -29,7 +29,6 @@ plt.rcParams.update({
 
 
 def plot_cost_curves():
-    # Prefer cost_curves_v2.csv
     csv_path = RESULTS_DIR / "cost_curves_v2.csv"
     if not csv_path.exists():
         csv_path = RESULTS_DIR / "cost_curves.csv"
@@ -39,33 +38,27 @@ def plot_cost_curves():
         return
 
     df = pd.read_csv(csv_path)
-    graphs = df["graph"].unique()
-    n_graphs = len(graphs)
 
-    fig, axes = plt.subplots(1, n_graphs, figsize=(5 * n_graphs, 5), sharey=True)
-    if n_graphs == 1:
-        axes = [axes]
+    # Plot multi-panel by attack family (A1, A2, A3, A4, A4b, A5, A5b, A6)
+    attacks = sorted(df["attack"].unique())
+    n_attacks = len(attacks)
+
+    cols = 4
+    rows = (n_attacks + cols - 1) // cols
+    fig, axes = plt.subplots(rows, cols, figsize=(16, 4 * rows), sharey=True)
+    axes = axes.flatten()
 
     colors = {"HITS": "#D9534F", "PageRank": "#337AB7", "SALSA": "#5CB85C", "InDegree": "#F0AD4E"}
     markers = {"HITS": "o", "PageRank": "s", "SALSA": "^", "InDegree": "d"}
 
-    title_map = {
-        "Synthetic_BA_500": "Scale-Free (BA-500)",
-        "Synthetic_ER_500": "Random (ER-500)",
-        "Synthetic_SBM_500": "Planted SBM-500",
-        "SNAP_web-Stanford_BaseSet": "SNAP web-Stanford BaseSet",
-        "SNAP_wiki-Vote_BaseSet": "SNAP wiki-Vote BaseSet",
-    }
-
-    for idx, g_name in enumerate(graphs):
+    for idx, att in enumerate(attacks):
         ax = axes[idx]
-        sub_df = df[df["graph"] == g_name]
+        sub_df = df[df["attack"] == att]
 
         for ranker in ["HITS", "PageRank", "SALSA", "InDegree"]:
             r_df = sub_df[sub_df["ranker"] == ranker]
-            agg = r_df.groupby("budget")["rank_gain"].agg(["mean", "std", "count"]).reset_index()
+            agg = r_df.groupby("budget")["normalized_rank_gain"].agg(["mean", "std", "count"]).reset_index()
 
-            # Bootstrap CI or standard error for CI band
             ci_half = 1.96 * agg["std"].fillna(0) / np.sqrt(agg["count"])
 
             ax.plot(
@@ -79,20 +72,24 @@ def plot_cost_curves():
                 agg["budget"],
                 np.maximum(0, agg["mean"] - ci_half),
                 agg["mean"] + ci_half,
-                alpha=0.18,
+                alpha=0.15,
                 color=colors.get(ranker, "black"),
             )
 
-        clean_title = title_map.get(g_name, g_name)
-        ax.set_title(clean_title, fontweight="bold")
-        ax.set_xlabel("Attacker Edge Budget B")
-        if idx == 0:
-            ax.set_ylabel("Target Rank Gain [with 95% CI]")
+        ax.set_title(f"{att} (Preliminary)", fontsize=11, fontweight="bold")
+        ax.set_xlabel("Attacker Edge Budget B", fontsize=10)
+        if idx % cols == 0:
+            ax.set_ylabel("Normalized Rank Gain", fontsize=10)
         ax.grid(True, linestyle="--", alpha=0.5)
+        ax.set_ylim(-0.05, 1.05)
         if idx == 0:
-            ax.legend(frameon=True, facecolor="white", framealpha=0.9, loc="upper left")
+            ax.legend(frameon=True, facecolor="white", framealpha=0.9, fontsize=9, loc="upper left")
 
-    plt.suptitle("Target Rank Gain vs Attacker Budget Across Graph Topologies (Preliminary - Mid-Project)", y=1.02, fontweight="bold")
+    # Hide unused subplots
+    for j in range(idx + 1, len(axes)):
+        axes[j].axis("off")
+
+    plt.suptitle("Normalized Rank Gain vs Budget by Attack Family (Preliminary - Mid-Project)", y=1.01, fontweight="bold")
     out_png = FIGURES_DIR / "cost_curves_rank_gain.png"
     plt.savefig(out_png, dpi=300, bbox_inches="tight")
     plt.close()
@@ -100,7 +97,6 @@ def plot_cost_curves():
 
 
 def plot_h2_experiment():
-    # Prefer h2_robustness.csv or h2_experiment.csv
     csv_h2 = RESULTS_DIR / "h2_experiment.csv"
     if not csv_h2.exists():
         print(f"[SKIP] {csv_h2} does not exist.")
@@ -138,7 +134,7 @@ def plot_h2_experiment():
     ax2.plot(df["p_farm_size"], df["salsa_rank"], label="SALSA Rank", color="#5CB85C", marker="^", linestyle=":", linewidth=2.0)
     ax2.axvline(x=sigma1_sq, color="#292b2c", linestyle="--", linewidth=2.0, label=rf"Threshold $\sigma_1^2$")
 
-    ax2.set_title("Target Rank vs Farm Size p (H2 Bifurcation)", fontweight="bold")
+    ax2.set_title("Target Rank vs Farm Size p (Preliminary - H2 Bifurcation)", fontweight="bold")
     ax2.set_xlabel(r"Hub Farm Size $p$")
     ax2.set_ylabel("Target Rank (1 = Top Authority)")
     ax2.invert_yaxis()
@@ -162,34 +158,32 @@ def plot_defenses():
 
     df = pd.read_csv(csv_path)
 
-    # Aggregate by defense
-    if "clean_ndcg_loss" in df.columns:
-        agg = df.groupby("defense").agg({
-            "attack_success_reduction": "mean",
-            "clean_ndcg_loss": "mean",
-            "clean_top20_ndcg": "mean",
-        }).reset_index()
-        x_col = "clean_ndcg_loss"
-        x_label = "Clean Graph NDCG@20 Loss (Lower = Better)"
-    else:
-        agg = df.groupby("defense").agg({
-            "attack_success_reduction": "mean",
-            "false_demotion": "mean",
-            "clean_top20_ndcg": "first"
-        }).reset_index()
-        x_col = "false_demotion"
-        x_label = "Clean Graph False Demotion (1 - Clean Jaccard@20)"
+    # Exclude cells where undefended attack gain <= 0
+    undef = df[df["defense"] == "Undefended_HITS"]
+    base_gains = undef.set_index(["graph", "target_node", "attack", "budget"])["rank_gain"].to_dict()
+    df["base_gain"] = df.apply(lambda r: base_gains.get((r["graph"], r["target_node"], r["attack"], r["budget"]), 0), axis=1)
+
+    df_pos = df[df["base_gain"] > 0].copy()
+    df_pos["true_reduction"] = 1.0 - (df_pos["rank_gain"] / df_pos["base_gain"])
+
+    # Compute mean metrics across valid cells
+    agg_red = df_pos.groupby("defense")["true_reduction"].mean().reset_index()
+    agg_loss = df.groupby("defense")["clean_ndcg_loss"].mean().reset_index()
+    agg = pd.merge(agg_red, agg_loss, on="defense")
 
     fig, ax = plt.subplots(figsize=(10, 6))
     colors = ["#D9534F", "#0275D8", "#5BC0DE", "#5CB85C", "#F0AD4E", "#6F42C1", "#20C997", "#E83E8C"]
 
     # Target proposal goal region: reduction >= 50%, NDCG loss <= 5%
-    ax.add_patch(patches.Rectangle((0, 50), 0.05, 60, color="#28A745", alpha=0.12, label="Proposal Target Zone (>=50% red, <=5% loss)"))
+    ax.add_patch(patches.Rectangle((0, 50), 0.05, 60, color="#28A745", alpha=0.12, label="Proposal Goal Zone (>=50% red, <=5% loss)"))
 
     for i, row in agg.iterrows():
-        name = row["defense"].replace("_", " ")
-        x_val = row[x_col]
-        y_val = row["attack_success_reduction"] * 100.0
+        d_raw = row["defense"]
+        name = d_raw.replace("_", " ")
+        if "HubCapping" in d_raw:
+            name += " (No-Op)"
+        x_val = row["clean_ndcg_loss"]
+        y_val = row["true_reduction"] * 100.0
 
         ax.scatter(
             x_val,
@@ -204,15 +198,15 @@ def plot_defenses():
         ax.annotate(
             name,
             (x_val + 0.008, y_val + 1.2),
-            fontsize=10.5,
+            fontsize=9.5,
             fontweight="bold"
         )
 
-    ax.set_title("Defenses Trade-off: Attack Reduction vs Clean Distortion (Preliminary)", fontweight="bold")
-    ax.set_xlabel(x_label)
-    ax.set_ylabel("Attack Success Reduction (%) [Higher = Better]")
-    ax.set_ylim(-30, 115)
-    ax.set_xlim(-0.01, max(0.65, agg[x_col].max() + 0.08))
+    ax.set_title("Defenses Trade-off: Attack Reduction vs Clean Distortion (Preliminary - Small-N)", fontweight="bold")
+    ax.set_xlabel("Clean Graph NDCG@20 Loss (Lower = Better)")
+    ax.set_ylabel("Mean Attack Success Reduction (%) [Higher = Better]")
+    ax.set_ylim(-85, 115)
+    ax.set_xlim(-0.01, max(0.65, agg["clean_ndcg_loss"].max() + 0.08))
     ax.grid(True, linestyle="--", alpha=0.5)
 
     out_png = FIGURES_DIR / "defenses_tradeoff.png"

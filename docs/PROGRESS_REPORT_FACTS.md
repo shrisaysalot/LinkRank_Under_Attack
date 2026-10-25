@@ -5,21 +5,23 @@ The following table itemizes all corrections made to rectify unverified or erron
 
 | Item | Claim in v1 | Verified Finding in v2 | Rationale / Root Cause |
 |---|---|---|---|
-| **CPU Hardware** | 12th Gen Intel Core i7-12700H (14 cores, 20 threads) | **12th Gen Intel Core i5-12500H** (12 physical cores, 16 logical threads) | Hardware was probed directly using `psutil` and Windows WMI (`results/environment.txt`). |
-| **Peak Memory Metric** | 0.50 – 18.17 MB (labeled as process RSS) | **0.50 – 18.17 MB Python Heap** (`tracemalloc`), **108.2 – 183.4 MB Process RSS** (`psutil`) | v1 reported internal Python heap allocations from `tracemalloc.get_traced_memory()` without distinguishing OS resident set size (RSS). |
-| **H1 Kendall's $\tau$** | $\tau = 0.912$ on ER graph | **$\tau = 0.746$** ($p = 7.99 \times 10^{-244}$, Spearman $\rho = 0.887$) on clean $G_{\text{ER}}(1000, 0.005)$ | The $0.912$ figure was an unverified row transposition from an early draft. Heavy-tailed BA-1000 drops to $\tau = 0.515$. |
+| **CPU Hardware** | 12th Gen Intel Core i7-12700H | **12th Gen Intel Core i5-12500H** (12 physical cores, 16 logical threads) | Probed directly using `psutil` and Windows WMI (`results/environment.txt`); v1 claim cause unknown. |
+| **Peak Memory Metric** | 0.50 – 18.17 MB (labeled as process RSS) | **0.50 – 18.17 MB Python Heap** (`tracemalloc`), **108.2 – 183.4 MB Process RSS** (`psutil`) | v1 reported internal Python heap allocations from `tracemalloc.get_traced_memory()`. Process RSS is dominated by the interpreter and library baseline. |
+| **H1 Kendall's $\tau$** | $\tau = 0.912$ on ER graph | **$\tau = 0.746$** ($p = 7.99 \times 10^{-244}$, Spearman $\rho = 0.887$) on clean $G_{\text{ER}}(1000, 0.005)$ | Recomputed from clean ER-1000 graph; v1 claim cause unknown. Heavy-tailed BA-1000 drops to $\tau = 0.515$. |
 | **Attack Nomenclature (A4/A5)** | A4 = multi-hub inflation, A5 = cross-linked clique | **A4 = Single fake page linking to $c$ authorities** (proposal definition); **A5 = $p$ fake hubs linking to target and $c$ authorities** (no cross-links) | Restored exact proposal specifications as `attack_a4_hub_inflation` and `attack_a5_cross_score`. Multi-hub and cross-linked extensions retained as A4b and A5b. |
-| **Defense D2 (Bharat-Henzinger)** | Used no-op WCC connected components fallback | **True domain-to-page edge weighting** with `infer_domain_map` and reciprocal $1/k$ weighting | The earlier implementation fell back to WCC when domains were absent, which produced trivial identical scores on connected components. |
-| **Defense D4 (Wu-Davison)** | Only tested a pairwise window shortcut | **True mutual in/out link overlap** (`wu_davison_hits`, D4) and full pairwise out-link Jaccard without window shortcuts (`wu_davison_outlink_jaccard_hits`, D4b) | proposal D4 specified mutual overlap; outlink Jaccard was added and tested without $i+50$ index shortcuts. |
-| **H3 Budget Savings** | Attaching to community saves "$\approx 67\%$" budget | **48.1% [39.3%, 57.0%] saving on ER control**, **0.0% on planted SBM-500** at discrete budget step | The 67% claim was overgeneralized from a single instance. On the discrete test grid, SBM planted target achieved top-10 at the same step size. |
-| **Cost Curves Metric** | PageRank raw rank gain appeared higher than HITS at $B=25$ | **HITS Normalized Rank Gain ($0.511$ [0.471, 0.551]) exceeds PageRank ($0.472$ [0.442, 0.506])** | Raw rank gain biased results because low-rank targets started at rank ~1855 on wiki-Vote. Normalized rank gain correctly scales by $(N - \text{initial\_rank})$. |
-| **Automated Tests** | 16 tests passing, required `python -m pytest` | **30 tests passing**, `pytest.ini` configured for bare `pytest` in 1.65s | Added comprehensive eval, defense, and attack test suites. |
-| **Relative File Links** | Contained 34 absolute `file:///c:/Users/shris/...` links | **100% clean relative markdown links** | All machine-specific paths removed across repository docs. |
+| **Defense D2 (Bharat-Henzinger)** | Used no-op WCC connected components fallback | **True domain-to-page edge weighting** with `infer_domain_map` and reciprocal $1/k$ weighting | The earlier implementation fell back to WCC when domains were absent, placing all nodes into one component. |
+| **Defense D3 (Hub Capping)** | Claimed 23.6% attack reduction | **Exact No-Op** (0.0% reduction, 0.0% clean NDCG loss) | Capping hub weight at 10% of total hub mass was never triggered across any evaluation instance ($d_3 - \text{undef} = 0.000000$). |
+| **Defense D4 (Wu-Davison)** | Claimed universal 100% reduction with 0 clean loss | **D4 (Mutual Overlap):** -23.3% mean red (median 3.0%), 0.5% clean NDCG loss; **D4b (Out-Jaccard):** -24.0% mean red (median 2.5%), 1.3% clean NDCG loss | D4/D4b achieve 69–85% reduction against isolated farms (A2/A3), but fail against camouflaged farms and A6 where Jaccard overlap is diluted. |
+| **Undefended HITS Reduction Metric** | Showed 23.6% attack reduction for undefended HITS | **0.0% attack reduction across positive-gain cells** ($n=110$) | In 34 of 144 cells (23.6%), undefended target attack gain was $\le 0$. The old metric function mapped non-positive gains to 1.0, creating an artifactual 23.6% reduction. |
+| **H3 Budget Savings** | Attaching to community saves "$\approx 67\%$" budget | **48.1% [39.3%, 57.0%] saving on ER control**, **undefined / NaN on planted SBM-500** ($B \le 200$) | The 67% claim was unverified. On planted SBM, target failed to reach Top-10 under pure farm A2 within $B \le 200$, and reached Top-10 under A5 only at $B=200$. |
+| **Cost Curves HITS vs PageRank** | Claimed HITS strictly higher normalized rank gain than PR | **CIs overlap at $B=25$** (HITS: 0.511 [0.471, 0.551] vs PR: 0.472 [0.442, 0.506]); **PageRank higher at $B=100$** (PR: 0.630 [0.597, 0.663] vs HITS: 0.600 [0.560, 0.642]) | SALSA and In-Degree are significantly higher than both at both budgets. Unverified claim of "rank ~1855 on wiki-Vote" removed. |
+| **Scale-Down vs Proposal** | Full grid 1..500, 5 seeds, all graphs | **Budget grid $\{1, 5, 10, 25, 50, 75, 100\}$** (no 200/500), **3 seeds** (`[42, 123, 456]`), **4 graphs**, **5 targets/setting** | Scaled down to guarantee reproducible execution on laptop within mid-project timeline. |
+| **Relative File Links & Repo Hygiene** | Contained 34 absolute `file:///c:/Users/shris/...` links | **100% clean relative markdown links**; bare `pytest` enabled via `pytest.ini` | All machine-specific paths removed; test suite expanded to 30 passing unit tests. |
 
 ### Claims I Could Not Verify
-1. **WEBSPAM-UK2006 Hostgraph AUC / Spam@k:** The official human labels (8,415 labeled hosts) are verified and parsed in `data/raw/`, but full hostgraph AUC cannot be computed without Java WebGraph extraction of the BVGraph bitstream. Manual steps are documented in [`docs/WEBSPAM_MANUAL_STEPS.md`](WEBSPAM_MANUAL_STEPS.md).
-2. **Universal 67% Cost Reduction for H3:** Re-evaluation across 27 controlled graph instances showed cost savings are graph- and community-density dependent (48.1% on ER control; 0% on SBM-500 on the tested discrete grid).
-3. **100% Defense Reduction with 0 Clean Loss for D4:** While D4 and D4b are the top performers (meeting the proposal criteria in 46.5% and 48.6% of test cells), their attack reduction varies substantially across attack families and does not achieve universal 100% mitigation.
+1. **WEBSPAM-UK2006 Hostgraph AUC / Spam@k:** The official human labels (8,415 labeled hosts) are verified and parsed in `data/raw/`, but full hostgraph AUC cannot be computed without Java WebGraph extraction of the hostgraph bitstream. Manual steps are documented in [`docs/WEBSPAM_MANUAL_STEPS.md`](WEBSPAM_MANUAL_STEPS.md).
+2. **Universal Cost Reduction for H3:** Re-evaluation across 18 controlled trials ($n=9$ SBM, $n=9$ ER) showed attachment cost savings are graph-dependent (48.1% on ER control; target failed to penetrate Top-10 within $B \le 200$ on dense SBM).
+3. **100% Defense Reduction with 0 Clean Loss for D4:** Across all positive-gain test cells, D4 achieves a goal-meeting rate ($\ge 50\%$ reduction at $\le 5\%$ clean NDCG loss) of 36.4% (D4 mutual) and 38.2% (D4b out-Jaccard); neither achieves universal mitigation.
 
 ---
 
@@ -29,7 +31,7 @@ The following table itemizes all corrections made to rectify unverified or erron
 - **Course:** Information Retrieval (IR)
 - **Members:** Shrisay Shandilya, Vibhor Rathi, Prachi Jain
 - **Repository:** [https://github.com/shrisaysalot/LinkRank_Under_Attack](https://github.com/shrisaysalot/LinkRank_Under_Attack)
-- **Date of Report:** 25 October 2026 (Mid-Project Checkpoint; Final Submission: 15 November 2026)
+- **Date of Report:** 25 October 2026 (Mid-Project Checkpoint; Final Submission Planned: 15 November 2026)
 
 ---
 
@@ -44,10 +46,10 @@ The following table itemizes all corrections made to rectify unverified or erron
 | **Rankers / Defenses** | Randomized HITS (D1) | **DONE** | [`src/rankers/randomized_hits.py`](../src/rankers/randomized_hits.py) | Damped authority/hub power iteration with uniform jump reset $\epsilon=0.15$ (Ng et al. 2001). |
 | **Rankers / Defenses** | Subspace HITS (D1) | **DONE** | [`src/rankers/subspace_hits.py`](../src/rankers/subspace_hits.py) | Spectral projection across top-$k$ singular vectors to prevent single-community takeover. |
 | **Data Loaders** | SNAP Graph Loader | **DONE** | [`src/data/loader.py`](../src/data/loader.py) | Downloads and loads real SNAP web graphs (wiki-Vote, web-Stanford, web-NotreDame). |
-| **Data Loaders** | WEBSPAM-UK2006 Loader | **PARTIAL** | [`src/data/loader.py`](../src/data/loader.py) | Official human/domain labels downloaded & parsed (8,415 hosts; explicit undecided handling); raw webgraph pending BVGraph conversion. |
+| **Data Loaders** | WEBSPAM-UK2006 Loader | **PARTIAL** | [`src/data/loader.py`](../src/data/loader.py) | Official human/domain labels downloaded & parsed (8,415 hosts; explicit undecided handling); hostgraph bitstream pending BVGraph conversion. |
 | **Data Generators** | Synthetic Graph Generators | **DONE** | [`src/data/synthetic.py`](../src/data/synthetic.py) | Barabasi-Albert (scale-free), Erdos-Renyi, and SBM with planted dense bipartite communities. |
 | **Data Subsets** | Kleinberg Base-Set Builder | **DONE** | [`src/data/base_set.py`](../src/data/base_set.py) | Query root set sampling ($|R| \approx 100-200$), out-link expansion, and max 50 in-link capping. |
-| **Attacks** | A1: Single Fake Hub | **DONE** | [`src/attacks/a1_single_fake_hub.py`](../src/attacks/a1_single_fake_hub.py) | Injects 1 fake node with 1 direct edge to target. |
+| **Attacks** | A1: Single Fake Hub | **DONE** | [`src/attacks/a1_single_fake_hub.py`](../src/attacks/a1_single_fake_hub.py) | Injects 1 fake node with 1 direct edge to target ($B=1$). |
 | **Attacks** | A2: Hub Farm | **DONE** | [`src/attacks/a2_hub_farm.py`](../src/attacks/a2_hub_farm.py) | Injects $p$ fake hub nodes each linking directly to target. |
 | **Attacks** | A3: Bipartite Block | **DONE** | [`src/attacks/a3_bipartite_block.py`](../src/attacks/a3_bipartite_block.py) | Injects $K_{p, q}$ bipartite clique containing target and collateral fake authorities. |
 | **Attacks** | A4: Hub Inflation (Proposal) | **DONE** | [`src/attacks/a4_hub_inflation.py`](../src/attacks/a4_hub_inflation.py) | 0 or 1 fake page linking to target AND $c$ real legitimate authorities. |
@@ -56,21 +58,21 @@ The following table itemizes all corrections made to rectify unverified or erron
 | **Attacks** | A5b: Cross-Linked Coupling | **DONE** | [`src/attacks/a5_cross_score.py`](../src/attacks/a5_cross_score.py) | Hub inflation combined with reciprocal cross-links among attacker cluster. |
 | **Attacks** | A6: Greedy Gradient Edge Choice | **DONE** | [`src/attacks/a6_greedy_gradient.py`](../src/attacks/a6_greedy_gradient.py) | Ranks edge additions by $\partial \sigma_1 / \partial A_{ij} = h_i a_j$ with candidate re-verification. |
 | **Defenses** | D2: Bharat-Henzinger Edge Weighting | **DONE** | [`src/defenses/d2_bharat_henzinger.py`](../src/defenses/d2_bharat_henzinger.py) | Down-weights multiple edges between the same source and destination domains ($1/k$). |
-| **Defenses** | D3: Hub-Contribution Capping | **DONE** | [`src/defenses/d3_hub_capping.py`](../src/defenses/d3_hub_capping.py) | Caps max hub weight contribution to any authority at $10\%$ of total hub mass. |
+| **Defenses** | D3: Hub-Contribution Capping | **DONE** | [`src/defenses/d3_hub_capping.py`](../src/defenses/d3_hub_capping.py) | Exact no-op under tested parameters (10% cap never triggered on tested graphs). |
 | **Defenses** | D4: Wu-Davison Link-Farm Reweighting | **DONE** | [`src/defenses/d4_wu_davison.py`](../src/defenses/d4_wu_davison.py) | Detects mutual in/out overlap (D4) and pairwise out-link Jaccard overlap (D4b). |
 | **Defenses** | D5: Trust-Based HITS | **DONE** | [`src/defenses/d5_trust_hits.py`](../src/defenses/d5_trust_hits.py) | Injects TrustRank seed prior in jump term; cuts authority derived from zero-trust hubs. |
 | **Evaluation** | Metrics & Correlation | **DONE** | [`src/eval/metrics.py`](../src/eval/metrics.py) | Rank gain, normalized rank gain, $B^*(k)$, Top-$k$ entry, NDCG@k, Jaccard@k, $\tau$, $\rho$. |
 | **Evaluation** | Statistical Confidence Testing | **DONE** | [`src/eval/stats.py`](../src/eval/stats.py) | Percentile bootstrap 95% CIs, Wilcoxon signed-rank paired tests, Holm-Bonferroni correction. |
 | **WEBSPAM Eval** | Spam Host Classification / Spam@k | **PARTIAL** | [`src/data/loader.py`](../src/data/loader.py) | Labels loaded and categorized; full evaluation pending BVGraph extraction. |
-| **Stretch** | Game-Theoretic Attacker-Defender Loop | **PENDING** | - | Iterative adversarial equilibrium (scheduled for final stretch). |
-| **Stretch** | Closed-Form Spectral Robustness Bound | **PENDING** | - | Derivation of exact lower bound on attacker budget $B^*$ to achieve top-1. |
-| **Stretch** | WEBSPAM-UK2007 Classifier | **PENDING** | - | Multi-feature spam classifier on UK-2007 corpus. |
+| **Stretch** | Game-Theoretic Attacker-Defender Loop | **NOT STARTED** | - | Iterative adversarial equilibrium (planned for final sprint). |
+| **Stretch** | Closed-Form Spectral Robustness Bound | **PARTIAL** | - | Empirical threshold $p \approx 0.82 \sigma_1^2$ observed; mathematical closed-form proof and generalized bound NOT STARTED. |
+| **Stretch** | WEBSPAM-UK2007 Classifier | **NOT STARTED** | - | Multi-feature spam classifier on UK-2007 corpus. |
 
 ---
 
 ## 3. Architecture Changes vs Proposal
 1. **Link-Analysis Focus vs IR Text Processing:** The standard IR proposal template mentions text processing (tokenization, stemming, inverted index, BM25). Because this project investigates link-structure vulnerability, the analogous pipeline consists of graph ingestion, deduplication/self-loop filtering, Kleinberg query base-set expansion, sparse power iteration ranking, and link injection attacks. No text processing or document indexing is employed or required.
-2. **WEBSPAM-UK2006 Hostgraph Ingestion:** While the official host label sets (set1 and set2, 8,415 hosts) were successfully retrieved, the underlying multi-gigabyte link graph is hosted in WebGraph compressed bitstream (`.graph` / `.properties`) format requiring Java extraction tools (`BVGraph` / `ArcListASCIIGraph`). For mid-project experiments, we evaluated on real SNAP web graphs (`wiki-Vote`, `web-Stanford`, `web-NotreDame`) and synthetic graphs, deferring complete BVGraph extraction to the final sprint. Manual extraction steps are fully documented in [`docs/WEBSPAM_MANUAL_STEPS.md`](WEBSPAM_MANUAL_STEPS.md).
+2. **WEBSPAM-UK2006 Hostgraph Ingestion:** The official host label sets (set1 and set2, 8,415 hosts) are downloaded and parsed. The proposal's UK-2006 hostgraph (`uk-2006-05.host.graph`, 11,402 hosts) is ~1.9 MB in BVGraph compressed bitstream format (contrasting with the full ~77M page graph which is multi-gigabytes). Converting this ~1.9 MB host graph requires Java WebGraph extraction (`BVGraph` / `ArcListASCIIGraph`). Mid-project experiments evaluated on real SNAP web graphs (`wiki-Vote`, `web-Stanford`, `web-NotreDame`) and synthetic benchmarks. Manual extraction steps are fully documented in [`docs/WEBSPAM_MANUAL_STEPS.md`](WEBSPAM_MANUAL_STEPS.md).
 
 ---
 
@@ -83,8 +85,9 @@ The following table itemizes all corrections made to rectify unverified or erron
   - Expansion: All outgoing neighbors added.
   - In-Link Capping: Predecessors are capped at a maximum of $50$ in-links per root node (preventing ubiquitous portal hubs from overwhelming the subgraph).
 - **WEBSPAM-UK2006 Undecided Label Handling:**
-  - Evaluators in WEBSPAM tagged hosts with spamicity in $[0, 1]$. Hosts with score $> 0.5$ are `spam`, $< 0.5$ are `normal`, and exactly $0.5$ are `undecided` ($176$ hosts in Set 1).
-  - Explicit Strategy: In our loader ([`src/data/loader.py`](../src/data/loader.py)), undecided hosts are excluded by default (`undecided_mode="exclude"`) for rigorous binary ground-truth fidelity, with configurable options for conservative (`"spam"`), lenient (`"normal"`), or ternary (`"keep"`) evaluation.
+  - Quoting directly from the official WEBSPAM-UK2006 `README.txt` (Algorithmic Engineering Group, Universita La Sapienza):
+    > *"The spamicity measure is calculated by assigning 1 point for each 'spam' (S) judgment, 0.5 points for each 'borderline' (B) judgment, and 0 points for each 'normal' (N) judgment, and taking the average. The 'can not judge' (?) marks are ignored for this calculation. The label for a host with an average of over 0.5 is spam, for a host with an average of less than 0.5 is normal, and for a host with exactly 0.5 is undecided."*
+  - Explicit Strategy: In our loader ([`src/data/loader.py`](../src/data/loader.py)), undecided hosts ($176$ hosts in Set 1) are excluded by default (`undecided_mode="exclude"`) for rigorous binary ground-truth fidelity, with configurable options for conservative (`"spam"`), lenient (`"normal"`), or ternary (`"keep"`) evaluation.
 
 ### Ranker Parameters
 - **HITS:** Power iteration with L1 normalization after each step; convergence tolerance $\text{tol} = 10^{-8}$, maximum iterations $= 200$. Eigengap $\sigma_1^2 - \sigma_2^2$ computed via SciPy ARPACK sparse SVD.
@@ -92,55 +95,98 @@ The following table itemizes all corrections made to rectify unverified or erron
 - **SALSA:** Bipartite random walk with ergodic reset $\epsilon = 10^{-4}$ to ensure unique stationary distribution across disconnected components, $\text{tol} = 10^{-8}$.
 - **Randomized HITS (D1):** Reset parameter $\epsilon = 0.15$.
 - **Subspace HITS (D1):** Subspace dimensionality $k = 5$ singular vectors.
-- **Hub-Capping (D3):** Max hub weight cap $= 10\%$ of total hub mass.
+- **Hub-Capping (D3):** Max hub weight cap $= 10\%$ of total hub mass (verified as no-op on tested graphs).
 - **Random Seeds:** Default seed `42`; multi-seed experiments use `[42, 123, 456]`.
 
 ---
 
 ## 5. Preliminary Results Table
 
-The tables below summarize **13,440 empirical experimental trials** (`results/cost_curves_v2.csv`) evaluated across 4 graphs (`Synthetic_BA_500`, `Synthetic_ER_500`, `Synthetic_SBM_500`, `SNAP_web-Stanford_BaseSet`), 3 random seeds (42, 123, 456), 5 target nodes, 8 attack configurations (A1, A2, A3, A4, A4b, A5, A5b, A6), and 7 budget levels ($B \in \{1, 5, 10, 25, 50, 75, 100\}$), alongside 60 H2 takeover instances and 1,152 defense matrix evaluations.
+The experimental results below are derived from **13,440 empirical experimental trials** (`results/cost_curves_v2.csv`), 60 H2 takeover instances (`results/h2_robustness.csv`), 27 controlled H1/H3 trials (`results/h1_h3_eval.csv`), and 1,152 defense matrix evaluations (`results/defenses_eval_v2.csv`).
+
+### Cost Curves Evaluation: Per-Attack Breakdown at Fixed Budgets $B = 25$ and $B = 100$
+*Evaluated across 4 graphs (`Synthetic_BA_500`, `Synthetic_ER_500`, `Synthetic_SBM_500`, `SNAP_web-Stanford_BaseSet`), 3 seeds (`[42, 123, 456]`), and 5 targets ($n = 60$ trials per ranker per attack).*
 
 Values report **Mean and [95% Percentile Bootstrap Confidence Interval]**:
 
-### Cost Curves Evaluation: Fixed Budget $B = 25$ Edges (Pre-Takeover Regime)
-*Sample size: $n = 480$ evaluations per ranker at $B=25$.*
+#### Budget $B = 25$ Edges (Pre-Takeover Regime, $n=60$ per cell)
 
-| Ranker | Raw Rank Gain | Normalized Rank Gain | Top-10 Entry Rate (%) | Top-20 Jaccard | Top-20 NDCG | Kendall's $\tau$ |
+| Attack Type | Metric | Plain HITS | PageRank ($\alpha=0.85$) | SALSA | In-Degree |
+|---|---|---|---|---|---|
+| **A1: Single Hub** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.016 [0.011, 0.021]<br>0.0% [0.0%, 0.0%]<br>0.851 | 0.335 [0.285, 0.393]<br>0.0% [0.0%, 0.0%]<br>0.969 | 0.389 [0.344, 0.430]<br>0.0% [0.0%, 0.0%]<br>0.990 | 0.303 [0.270, 0.335]<br>0.0% [0.0%, 0.0%]<br>0.918 |
+| **A2: Hub Farm** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.316 [0.230, 0.413]<br>13.3% [5.0%, 23.3%]<br>0.837 | **0.982** [0.973, 0.990]<br>**100.0%** [100.0%, 100.0%]<br>0.794 | 0.950 [0.918, 0.976]<br>86.7% [78.3%, 95.0%]<br>0.892 | 0.982 [0.973, 0.989]<br>91.7% [85.0%, 96.7%]<br>0.839 |
+| **A3: Bipartite Block** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.139 [0.095, 0.190]<br>0.0% [0.0%, 0.0%]<br>0.854 | 0.335 [0.285, 0.393]<br>0.0% [0.0%, 0.0%]<br>0.963 | 0.806 [0.760, 0.845]<br>11.7% [3.3%, 20.0%]<br>0.923 | 0.813 [0.761, 0.856]<br>18.3% [8.3%, 28.3%]<br>0.854 |
+| **A4: Proposal Inflation** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.014 [-0.004, 0.043]<br>0.0% [0.0%, 0.0%]<br>0.900 | -0.011 [-0.023, -0.002]<br>0.0% [0.0%, 0.0%]<br>0.970 | -0.007 [-0.022, 0.002]<br>0.0% [0.0%, 0.0%]<br>0.997 | 0.000 [0.000, 0.000]<br>0.0% [0.0%, 0.0%]<br>0.978 |
+| **A4b: Multi-Hub Inflation** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | **0.872** [0.820, 0.916]<br>26.7% [16.7%, 38.3%]<br>0.733 | 0.421 [0.370, 0.481]<br>0.0% [0.0%, 0.0%]<br>0.936 | 0.745 [0.531, 0.864]<br>18.3% [8.3%, 28.3%]<br>0.954 | 0.835 [0.785, 0.879]<br>23.3% [13.3%, 35.0%]<br>0.871 |
+| **A5: Proposal Cross-Score** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | **0.872** [0.820, 0.916]<br>26.7% [16.7%, 38.3%]<br>0.733 | 0.421 [0.370, 0.481]<br>0.0% [0.0%, 0.0%]<br>0.936 | 0.745 [0.531, 0.864]<br>18.3% [8.3%, 28.3%]<br>0.954 | 0.835 [0.785, 0.879]<br>23.3% [13.3%, 35.0%]<br>0.871 |
+| **A5b: Cross-Score Links** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | **0.863** [0.813, 0.906]<br>25.0% [15.0%, 36.7%]<br>0.737 | 0.378 [0.323, 0.442]<br>0.0% [0.0%, 0.0%]<br>0.945 | 0.733 [0.520, 0.852]<br>18.3% [8.3%, 28.3%]<br>0.956 | 0.812 [0.759, 0.855]<br>18.3% [8.3%, 28.3%]<br>0.883 |
+| **A6: Greedy Gradient** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | **0.998** [0.998, 0.999]<br>**100.0%** [100.0%, 100.0%]<br>0.622 | 0.916 [0.889, 0.941]<br>66.7% [55.0%, 78.3%]<br>0.852 | 0.960 [0.911, 0.987]<br>91.7% [85.0%, 96.7%]<br>0.895 | 0.982 [0.973, 0.989]<br>91.7% [85.0%, 96.7%]<br>0.858 |
+
+#### Budget $B = 100$ Edges (Post-Takeover Regime, $n=60$ per cell)
+
+| Attack Type | Metric | Plain HITS | PageRank ($\alpha=0.85$) | SALSA | In-Degree |
+|---|---|---|---|---|---|
+| **A1: Single Hub** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.016 [0.011, 0.021]<br>0.0% [0.0%, 0.0%]<br>0.851 | 0.335 [0.285, 0.393]<br>0.0% [0.0%, 0.0%]<br>0.969 | 0.389 [0.344, 0.430]<br>0.0% [0.0%, 0.0%]<br>0.990 | 0.303 [0.270, 0.335]<br>0.0% [0.0%, 0.0%]<br>0.918 |
+| **A2: Hub Farm** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.576 [0.473, 0.687]<br>50.0% [38.3%, 63.3%]<br>0.438 | **0.998** [0.996, 1.000]<br>**100.0%** [100.0%, 100.0%]<br>0.634 | 0.958 [0.929, 0.983]<br>88.3% [80.0%, 95.0%]<br>0.844 | 0.996 [0.992, 0.999]<br>100.0% [100.0%, 100.0%]<br>0.831 |
+| **A3: Bipartite Block** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.548 [0.438, 0.661]<br>50.0% [38.3%, 63.3%]<br>0.415 | 0.335 [0.285, 0.393]<br>0.0% [0.0%, 0.0%]<br>0.960 | 0.852 [0.792, 0.902]<br>33.3% [21.7%, 45.0%]<br>0.772 | 0.893 [0.858, 0.924]<br>41.7% [28.3%, 55.0%]<br>0.742 |
+| **A4: Proposal Inflation** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.014 [-0.004, 0.043]<br>0.0% [0.0%, 0.0%]<br>0.900 | -0.011 [-0.023, -0.002]<br>0.0% [0.0%, 0.0%]<br>0.970 | -0.007 [-0.022, 0.002]<br>0.0% [0.0%, 0.0%]<br>0.997 | 0.000 [0.000, 0.000]<br>0.0% [0.0%, 0.0%]<br>0.978 |
+| **A4b: Multi-Hub Inflation** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.883 [0.831, 0.928]<br>50.0% [38.3%, 63.3%]<br>0.607 | 0.817 [0.791, 0.842]<br>23.3% [13.3%, 35.0%]<br>0.841 | 0.939 [0.865, 0.976]<br>91.7% [85.0%, 96.7%]<br>0.877 | 0.968 [0.959, 0.977]<br>91.7% [85.0%, 96.7%]<br>0.816 |
+| **A5: Proposal Cross-Score** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.883 [0.831, 0.928]<br>50.0% [38.3%, 63.3%]<br>0.607 | 0.817 [0.791, 0.842]<br>23.3% [13.3%, 35.0%]<br>0.841 | 0.939 [0.865, 0.976]<br>91.7% [85.0%, 96.7%]<br>0.877 | 0.968 [0.959, 0.977]<br>91.7% [85.0%, 96.7%]<br>0.816 |
+| **A5b: Cross-Score Links** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | 0.883 [0.831, 0.928]<br>50.0% [38.3%, 63.3%]<br>0.547 | 0.758 [0.725, 0.790]<br>21.7% [11.7%, 31.7%]<br>0.850 | 0.943 [0.881, 0.974]<br>91.7% [85.0%, 96.7%]<br>0.894 | 0.959 [0.945, 0.971]<br>91.7% [85.0%, 96.7%]<br>0.810 |
+| **A6: Greedy Gradient** | Norm Gain<br>Top-10 Rate (%)<br>Top-20 Jaccard | **0.999** [0.998, 0.999]<br>**100.0%** [100.0%, 100.0%]<br>0.614 | 0.992 [0.985, 0.998]<br>100.0% [100.0%, 100.0%]<br>0.638 | 0.997 [0.993, 0.999]<br>100.0% [100.0%, 100.0%]<br>0.898 | 0.996 [0.992, 0.999]<br>100.0% [100.0%, 100.0%]<br>0.850 |
+
+---
+
+### Secondary Pooled Cost Curves Summary (Across All 8 Attacks, $n = 480$ per ranker)
+
+| Budget | Ranker | Normalized Rank Gain | Top-10 Entry Rate (%) | Top-20 Jaccard | Top-20 NDCG | Kendall's $\tau$ |
 |---|---|---|---|---|---|---|
-| **Plain HITS** | 160.2 [145.3, 175.4] | **0.511** [0.471, 0.551] | **24.0%** [20.4%, 27.9%] | 0.783 [0.758, 0.806] | 0.974 [0.967, 0.980] | 0.960 [0.952, 0.968] |
-| **PageRank ($\alpha=0.85$)** | 131.7 [119.8, 145.7] | **0.472** [0.442, 0.506] | **20.8%** [17.3%, 24.6%] | 0.921 [0.908, 0.932] | 0.986 [0.982, 0.990] | 0.991 [0.989, 0.993] |
-| **SALSA** | 201.2 [187.5, 216.0] | **0.665** [0.619, 0.707] | **30.6%** [26.5%, 34.4%] | 0.945 [0.937, 0.953] | 0.983 [0.978, 0.988] | 0.987 [0.984, 0.990] |
-| **In-Degree** | 160.3 [150.0, 171.9] | **0.695** [0.664, 0.728] | **33.3%** [29.4%, 37.5%] | 0.884 [0.871, 0.897] | 0.982 [0.978, 0.986] | 0.997 [0.996, 0.998] |
+| **$B = 25$** | **Plain HITS** | 0.511 [0.471, 0.551] | 24.0% [20.4%, 27.9%] | 0.783 [0.758, 0.806] | 0.974 [0.967, 0.980] | 0.960 [0.952, 0.968] |
+| | **PageRank ($\alpha=0.85$)** | 0.472 [0.442, 0.506] | 20.8% [17.3%, 24.6%] | 0.921 [0.908, 0.932] | 0.986 [0.982, 0.990] | 0.991 [0.989, 0.993] |
+| | **SALSA** | 0.665 [0.619, 0.707] | 30.6% [26.5%, 34.4%] | 0.945 [0.937, 0.953] | 0.983 [0.978, 0.988] | 0.987 [0.984, 0.990] |
+| | **In-Degree** | 0.695 [0.664, 0.728] | 33.3% [29.4%, 37.5%] | 0.884 [0.871, 0.897] | 0.982 [0.978, 0.986] | 0.997 [0.996, 0.998] |
+| **$B = 100$** | **Plain HITS** | 0.600 [0.560, 0.642] | 43.8% [39.4%, 48.1%] | 0.622 [0.590, 0.655] | 0.875 [0.852, 0.898] | 0.878 [0.862, 0.895] |
+| | **PageRank ($\alpha=0.85$)** | 0.630 [0.597, 0.663] | 33.5% [29.2%, 37.9%] | 0.838 [0.819, 0.855] | 0.946 [0.937, 0.956] | 0.977 [0.974, 0.981] |
+| | **SALSA** | 0.751 [0.720, 0.784] | 62.1% [57.7%, 66.5%] | 0.894 [0.881, 0.906] | 0.958 [0.949, 0.967] | 0.966 [0.960, 0.971] |
+| | **In-Degree** | 0.760 [0.728, 0.793] | 64.6% [60.4%, 68.8%] | 0.845 [0.829, 0.860] | 0.952 [0.943, 0.960] | 0.996 [0.995, 0.997] |
 
-### Cost Curves Evaluation: Fixed Budget $B = 100$ Edges (Post-Takeover Regime)
-*Sample size: $n = 480$ evaluations per ranker at $B=100$.*
-
-| Ranker | Raw Rank Gain | Normalized Rank Gain | Top-10 Entry Rate (%) | Top-20 Jaccard | Top-20 NDCG | Kendall's $\tau$ |
-|---|---|---|---|---|---|---|
-| **Plain HITS** | 189.3 [174.8, 204.8] | **0.600** [0.560, 0.642] | **43.8%** [39.4%, 48.1%] | **0.622** [0.590, 0.655] | **0.875** [0.852, 0.898] | **0.878** [0.862, 0.895] |
-| **PageRank ($\alpha=0.85$)** | 171.4 [159.1, 185.5] | **0.630** [0.597, 0.663] | **33.5%** [29.2%, 37.9%] | 0.838 [0.819, 0.855] | 0.946 [0.937, 0.956] | 0.977 [0.974, 0.981] |
-| **SALSA** | 218.6 [204.4, 233.1] | **0.751** [0.720, 0.784] | **62.1%** [57.7%, 66.5%] | 0.894 [0.881, 0.906] | 0.958 [0.949, 0.967] | 0.966 [0.960, 0.971] |
-| **In-Degree** | 172.6 [161.9, 184.9] | **0.760** [0.728, 0.793] | **64.6%** [60.4%, 68.8%] | 0.845 [0.829, 0.860] | 0.952 [0.943, 0.960] | 0.996 [0.995, 0.997] |
-
-### Statistical Significance: Paired Wilcoxon Signed-Rank Tests (HITS vs Baselines at $B=100$)
-- **HITS vs PageRank:** Raw $p = 0.562$, Holm-adjusted $p = 0.562$ (Difference in normalized rank gain is not statistically significant at $B=100$; however, HITS suffers significantly worse Top-20 Jaccard collapse: $0.622$ vs $0.838$).
+*Paired Wilcoxon Signed-Rank Tests (HITS vs Baselines at $B=100$, $n=480$):*
+- **HITS vs PageRank:** Raw $p = 0.562$, Holm-adjusted $p = 0.562$ (Not statistically significant; CIs overlap; HITS suffers significantly worse Top-20 Jaccard collapse: 0.622 vs 0.838).
 - **HITS vs SALSA:** Raw $p = 1.19 \times 10^{-22}$, Holm-adjusted $p = 2.39 \times 10^{-22}$ (**Statistically Significant**; SALSA exhibits higher normalized rank gain under direct link manipulation).
 - **HITS vs In-Degree:** Raw $p = 1.44 \times 10^{-24}$, Holm-adjusted $p = 4.33 \times 10^{-24}$ (**Statistically Significant**; In-Degree is strictly proportional to edge count).
 
-### Defense Evaluation Matrix (D1–D5 across 1,152 Trials)
-*Evaluated across Synthetic BA-500 and web-Stanford BaseSet at budgets $B \in \{25, 100\}$. Proposal Criterion: $\ge 50\%$ attack reduction at $\le 5\%$ clean NDCG loss.*
+---
 
-| Defense Variant | Attack Success Reduction (%) | Clean Top-20 Jaccard | Clean NDCG Loss (%) | Meets Proposal Goal Rate (%) |
-|---|---|---|---|---|
-| **Undefended HITS** | 23.6% [16.7%, 31.2%] | 1.000 | 0.0% | 23.6% |
-| **D1: Randomized HITS ($\epsilon=0.15$)** | -43.6% [-99.3%, -7.2%] | 0.781 | **0.1%** | 22.2% |
-| **D1: Subspace HITS ($k=5$)** | 7.8% [-31.3%, 45.7%] | 0.338 | 28.3% | 10.4% |
-| **D2: Bharat-Henzinger ($1/k$)** | **48.3%** [29.7%, 62.9%] | 0.254 | 59.6% | 7.6% |
-| **D3: Hub Capping (10%)** | 23.6% [16.7%, 31.2%] | 1.000 | 0.0% | 23.6% |
-| **D4: Wu-Davison (Mutual Overlap)** | 1.0% [-51.6%, 31.5%] | 0.786 | **0.5%** | **46.5%** |
-| **D4b: Wu-Davison (Out-Link Jaccard)** | 1.1% [-55.9%, 33.9%] | 0.680 | **1.3%** | **48.6%** |
-| **D5: Trust-Based HITS** | -99.2% [-229.2%, -0.1%] | 0.337 | 27.7% | 10.4% |
+### Corrected Defense Evaluation Summary
+*Evaluated on positive attack gain cells ($n = 110$ instances per defense). Clean NDCG Loss and Clean Jaccard computed as mean across all rows ($n=144$). Proposal Criterion: $\ge 50\%$ attack reduction at $\le 5\%$ clean NDCG loss.*
+
+| Defense Variant | Attack Success Reduction (Mean [95% CI]) | Median Reduction (%) | Clean Top-20 Jaccard | Clean NDCG Loss (%) | Meets Proposal Goal Rate (%) | Note |
+|---|---|---|---|---|---|---|
+| **Undefended HITS** | 0.0% [0.0%, 0.0%] | 0.0% | 1.000 | 0.0% | 0.0% | Baseline ($n=110$ positive cells). |
+| **D1: Randomized HITS ($\epsilon=0.15$)** | -72.6% [-145.4%, -22.6%] | -1.0% | 0.781 | **0.1%** | 13.6% | Uniform reset diffuses mass proportionally to degree. |
+| **D1: Subspace HITS ($k=5$)** | -0.8% [-50.0%, 51.8%] | 15.7% | 0.338 | 28.3% | 9.1% | Significant clean distortion. |
+| **D2: Bharat-Henzinger ($1/k$)** | 38.7% [13.4%, 57.0%] | **89.4%** | 0.254 | 59.6% | 1.8% | High median reduction but severe clean graph distortion. |
+| **D3: Hub Capping (10%)** | 0.0% [0.0%, 0.0%] | 0.0% | 1.000 | 0.0% | 0.0% | **Exact No-Op** (10% cap never triggered on tested graphs). |
+| **D4: Wu-Davison (Mutual Overlap)** | -23.3% [-96.0%, 16.9%] | 3.0% | 0.786 | **0.5%** | **36.4%** | Effective on A2/A3; fails when overlap is camouflaged. |
+| **D4b: Wu-Davison (Out-Jaccard)** | -24.0% [-103.9%, 17.7%] | 2.5% | 0.680 | **1.3%** | **38.2%** | Effective on A2/A3; fails when overlap is camouflaged. |
+| **D5: Trust-Based HITS** | -150.7% [-323.7%, -29.4%] | 11.1% | 0.337 | 27.7% | 6.4% | Clean rank distortion reduces goal rate. |
+
+*Finding on Defense Goal:* **NO defense meets $\ge 50\%$ mean attack reduction at $\le 5\%$ clean NDCG loss across all attacks.** D4 and D4b meet the goal in 36.4% and 38.2% of positive-gain cells, but their mean reduction across all attacks is negative due to camouflaged and gradient attacks.
+
+---
+
+### Per-Attack Defense Breakdown (Attack Reduction Median & Goal Rate)
+
+| Attack Type | Budget | Undefended HITS | D1 Randomized ($\epsilon=0.15$) | D2 Bharat-Henzinger | D3 Hub Capping (10%) | D4 Wu-Davison (Mutual) | D4b Wu-Davison (Out-Jaccard) |
+|---|---|---|---|---|---|---|---|
+| **A2: Hub Farm** | $B=25$ ($n=8$)<br>$B=100$ ($n=9$) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: -172.5% (0.0% goal)<br>Med: -1.7% (0.0% goal) | Med: 99.3% (0.0% goal)<br>Med: 100.0% (11.1% goal) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: **96.6%** (**75.0%** goal)<br>Med: **96.5%** (**77.8%** goal) | Med: **97.3%** (**75.0%** goal)<br>Med: **97.5%** (**77.8%** goal) |
+| **A3: Bipartite Block** | $B=25$ ($n=7$)<br>$B=100$ ($n=7$) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: -226.9% (0.0% goal)<br>Med: -0.8% (0.0% goal) | Med: 92.9% (0.0% goal)<br>Med: 99.5% (0.0% goal) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: **100.0%** (**85.7%** goal)<br>Med: **99.0%** (**85.7%** goal) | Med: **100.0%** (**85.7%** goal)<br>Med: **99.7%** (**85.7%** goal) |
+| **A4: Proposal Inflation** | $B=25$ ($n=4$)<br>$B=100$ ($n=4$) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: **86.2%** (**75.0%** goal)<br>Med: **86.2%** (**75.0%** goal) | Med: 45.2% (0.0% goal)<br>Med: 45.2% (0.0% goal) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: 34.1% (25.0% goal)<br>Med: 34.1% (25.0% goal) | Med: 10.0% (25.0% goal)<br>Med: 10.0% (25.0% goal) |
+| **A5: Proposal Cross-Score** | $B=25$ ($n=12$)<br>$B=100$ ($n=12$) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: 2.3% (16.7% goal)<br>Med: -1.3% (16.7% goal) | Med: 90.3% (0.0% goal)<br>Med: 96.5% (0.0% goal) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: 65.7% (58.3% goal)<br>Med: 43.7% (33.3% goal) | Med: 80.4% (66.7% goal)<br>Med: 45.7% (41.7% goal) |
+| **A6: Greedy Gradient** | $B=25$ ($n=12$)<br>$B=100$ ($n=12$) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: 0.3% (0.0% goal)<br>Med: 0.3% (0.0% goal) | Med: 17.3% (0.0% goal)<br>Med: 19.8% (8.3% goal) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: -0.2% (0.0% goal)<br>Med: -0.2% (0.0% goal) | Med: -1.3% (0.0% goal)<br>Med: -1.3% (0.0% goal) |
+| **Camouflaged Farm** | $B=25$ ($n=11$)<br>$B=100$ ($n=12$) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: -2.8% (27.3% goal)<br>Med: -6.4% (16.7% goal) | Med: 28.1% (0.0% goal)<br>Med: 52.0% (0.0% goal) | Med: 0.0% (0.0% goal)<br>Med: 0.0% (0.0% goal) | Med: 0.6% (9.1% goal)<br>Med: -2.0% (8.3% goal) | Med: -4.3% (9.1% goal)<br>Med: -1.5% (8.3% goal) |
+
+---
 
 ### Clean Baseline Computational Efficiency & Peak Memory
 
@@ -152,88 +198,92 @@ Values report **Mean and [95% Percentile Bootstrap Confidence Interval]**:
 | **SNAP wiki-Vote** | 7,115 | 103,689 | 0.657s (23 it) | 0.580s (23 it) | 0.643s (53 it) | 18.17 MB | 183.4 MB | 6,158.51 |
 | **SNAP web-Stanford BaseSet** | 1,686 | 13,849 | 0.110s (23 it) | 0.155s (81 it) | 0.114s (200 it) | 2.45 MB | 152.1 MB | 2,518.81 |
 
-*Hardware Used:* 12th Gen Intel Core i5-12500H (12 physical cores, 16 logical threads), 15.69 GB RAM, Windows 11 64-bit, Python 3.12.5, SciPy 1.12.0 sparse linear algebra. Peak memory measured via Python heap `tracemalloc` (0.50 - 18.17 MB) and process RSS via `psutil` (108.2 - 183.4 MB).
+*Hardware Used:* 12th Gen Intel Core i5-12500H (12 physical cores, 16 logical threads), 15.69 GB RAM, Windows 11 64-bit, Python 3.12.5, SciPy 1.12.0 sparse linear algebra. Note: Process RSS (`psutil`: 108.2 – 183.4 MB) is dominated by the Python interpreter and library baseline, whereas Python heap allocations (`tracemalloc`: 0.50 – 18.17 MB) track active ranker data structures.
 
 ---
 
 ## 6. Hypothesis Status
 
 ### Hypothesis H1: "On random-like graphs HITS ~ in-degree"
-- **Status: SUPPORTED (Preliminary).**
-- **Evidence:** On Erdos-Renyi graphs ($G(1000, 0.005)$), Kendall's rank correlation between clean HITS authority scores and simple in-degree is $\tau = 0.746$ ($p = 7.99 \times 10^{-244}$; Spearman $\rho = 0.887$). In contrast, on heavy-tailed scale-free graphs (Barabasi-Albert, BA-1000), $\tau$ drops to $0.515$ ($p = 2.50 \times 10^{-115}$; Spearman $\rho = 0.692$), and on planted community SBM graphs $\tau = 0.533$ ($p = 1.39 \times 10^{-103}$). Evaluating the minimal budget $B^*(10)$ to reach Top-10 under single-hub injection across $n=9$ seeds, HITS requires a mean of **$4.44\times$ more budget** than simple in-degree on ER graphs, demonstrating that HITS authority aligns structurally with in-degree on homogeneous graphs but retains spectral resistance against isolated low-weight nodes.
-- **Limits:** In sparse disconnected graphs, nodes with identical in-degree receive distinct HITS scores depending on the spectral weight of their 2-hop neighborhoods.
+- **Status: NOT SUPPORTED (Attack Cost).**
+- **Evidence:** Evaluating the minimal budget $B^*(10)$ to reach Top-10 under single-hub injection across $n=9$ controlled trials on $G_{\text{ER}}(500, 0.012)$, HITS required a mean of **$4.44\times$ more budget** than simple in-degree (HITS required 30–50 edges, whereas In-Degree required only 5–10 edges). While clean-graph rank correlation is high ($\tau = 0.746$, $p = 7.99 \times 10^{-244}$; Spearman $\rho = 0.887$ on ER-1000, reported as supplementary only), HITS does not behave like in-degree under adversarial link manipulation because isolated hubs fail to promote a node until their spectral weight competes with background authority.
+- **Limits:** On heavy-tailed BA-1000, clean rank correlation drops to $\tau = 0.515$ ($p = 2.50 \times 10^{-115}$; Spearman $\rho = 0.692$).
 
 ### Hypothesis H2: "Hub farm of $p$ fake hubs only takes over top HITS vectors when $p \sim \sigma_1^2$ (sharp jump; PageRank gains smooth)"
-- **Status: STRONGLY SUPPORTED.**
-- **Evidence:** Evaluated systematically across $n=60$ independent instances (4 graph families, 3 random seeds, 5 targets, 24-point $p$ grid spanning $[1, 2 \sigma_1^2]$):
+- **Status: SUPPORTED (Preliminary).**
+- **Evidence:** Evaluated systematically across $n=60$ independent instances (4 graph families, 3 random seeds, 5 targets, $p$ grid spanning 24 multipliers linearly spaced between $0.1$ and $2.0 \times \sigma_1^2$):
   - **Upper Bound Hold Rate:** $\sigma_1^2 \ge \text{max in-degree}$ holds in **100.0%** of instances ($60/60$).
-  - **Abrupt Bifurcation Rate:** HITS exhibits an abrupt single-step rank jump in **63.3%** of instances, with a mean maximum single-step rank jump of **69.7 ranks** (median jump $64.0$ ranks), compared to **16.9 ranks** for PageRank.
-  - **Takeover Ratios:** The empirical takeover points closely match the theoretical spectral threshold:
+  - **Takeover Threshold:** Empirical takeover occurs somewhat below $\sigma_1^2$:
     - Top-10 takeover ratio: $p^*(10) / \sigma_1^2 = \mathbf{0.817}$ [0.751, 0.879] ($n=60$).
     - Top-1 takeover ratio: $p^*(1) / \sigma_1^2 = \mathbf{0.873}$ [0.819, 0.923] ($n=60$).
-  - In contrast, PageRank rank advances smoothly with strictly linear score accumulation ($\Delta PR \propto p \cdot \frac{\alpha(1-\alpha)}{N}$) and zero spectral bifurcation.
-- **Limits:** In graphs with small eigengaps ($\sigma_1^2 - \sigma_2^2 \approx 0$), power iteration converges slower near $p \approx \sigma_1^2$, requiring tighter convergence tolerances ($\text{tol} \le 10^{-9}$).
+  - **Abrupt Jump Rate:** HITS exhibits an abrupt single-step rank jump in **63.3%** of instances ($38 / 60$) with a mean maximum single-step rank jump of **69.7 ranks** (median jump $64.0$ ranks), compared to **16.9 ranks** for PageRank.
+  - **Counterexamples (36.7%):** In $22 / 60$ instances (12 on ER-400, 7 on BA-400, 3 on web-Stanford base-set), the rank jump did not exceed $2\times$ the PageRank step jump, occurring when background singular gaps are narrow or target nodes start in high-degree positions.
+- **Limits:** Evaluated on subgraphs ($N \le 1,686$); validation on full web-scale hostgraphs is scheduled for the final sprint.
 
 ### Hypothesis H3: "On graphs with dense communities, attaching to the community (TKC) is cheaper"
-- **Status: PARTIALLY SUPPORTED (Preliminary).**
-- **Evidence:** Evaluated across $n=18$ controlled trials comparing minimal budget $B^*(10)$ between A4 (community hub inflation) and A2 (isolated hub farm):
-  - On **ER Control graphs**, attaching to top authorities reduced the required budget to achieve Top-10 by **48.1%** [39.3%, 57.0%] (mean saving $4.33$ edges).
-  - On **Planted SBM graphs** with high inter-community density, target promotion occurred at the same discrete budget step for both attacks (mean cost saving **0.0%** [0.0%, 0.0%]), showing that if a planted community already dominates the principal eigenvector, attaching to it requires matching the community's internal degree threshold.
-  - The v1 claim of "$\approx 67\%$ cheaper" was overgeneralized from an unverified single-seed trial and is corrected.
-- **Limits:** Attacker cost reduction depends on the relative ratio of the target community's singular value to the background graph's principal singular value.
+- **Status: INCONCLUSIVE / NOT SUPPORTED.**
+- **Evidence:** Evaluated across $n=18$ controlled trials (`results/h1_h3_eval.csv`) comparing minimal budget $B^*(10)$ between A2 (isolated farm) and proposal A5 (attaching to target and $c=3$ real top authorities):
+  - On **ER Control graphs** ($n=9$), attaching to top authorities reduced the required budget to achieve Top-10 by **48.1%** [39.3%, 57.0%] (mean budget reduced from 30–50 down to 20 edges).
+  - On **Planted SBM graphs** ($n=9$), the target failed to reach Top-10 under A2 within the evaluated budget grid ($B \le 200$), and reached Top-10 under A5 only at $B=200$ (cost saving undefined / NaN).
+  - Observing 48.1% savings on ER control and no penetration below $B=200$ on SBM is the opposite of the prediction that dense planted communities make attachment uniquely cheaper.
+- **Limits:** The budget grid was capped at $B=200$; higher budgets are needed to observe SBM farm takeover.
 
 ### Hypothesis H4: "Damped/capped/trust-based HITS cuts attack success with little clean-graph damage"
-- **Status: PARTIALLY SUPPORTED (with critical trade-off nuances).**
-- **Evidence:** Tested across 1,152 evaluations (`results/defenses_eval_v2.csv`):
-  - **D4 (Wu-Davison Mutual Overlap) and D4b (Out-Link Jaccard):** Established the best Pareto trade-off frontier. D4b achieved a **48.6%** goal-meeting rate ($\ge 50\%$ attack reduction at $\le 5\%$ clean NDCG loss) with clean Top-20 Jaccard of $0.680$ and only **$1.3\%$ clean NDCG loss**. D4 achieved a **46.5%** goal-meeting rate with **$0.5\%$ clean NDCG loss**.
-  - **D2 (Bharat-Henzinger $1/k$ Weighting):** Strongest raw attack mitigation (**48.3%** [29.7%, 62.9%] mean attack reduction), but incurs severe clean graph distortion (**59.6% clean NDCG loss**, Clean Jaccard $0.254$) because down-weighting intra-domain edges distorts legitimate dense web hubs.
-  - **D1 (Randomized HITS, $\epsilon=0.15$):** Minimal clean distortion (Clean NDCG loss **$0.1\%$**, Jaccard $0.781$), but can exhibit negative attack reduction under high budgets because the uniform random teleport diffuses mass like PageRank, allowing brute-force link farms to accumulate authority.
-  - **D1 (Subspace HITS, $k=5$) & D5 (Trust-Based HITS):** Suffer moderate clean NDCG loss ($28.3\%$ and $27.7\%$) and meet the proposal goal in only $10.4\%$ of trials.
-- **Limits:** Defenses were evaluated on synthetic networks and SNAP subgraphs; validation on full web-scale hostgraphs is scheduled for the final sprint.
+- **Status: NOT SUPPORTED so far.**
+- **Evidence:** Tested across 1,152 evaluations (`results/defenses_eval_v2.csv`, $n=110$ positive attack gain instances per defense):
+  - **No defense meets $\ge 50\%$ mean attack reduction at $\le 5\%$ clean NDCG loss across all attacks.**
+  - **Wu-Davison (D4 and D4b):** Achieve high reduction on isolated hub farms (A2/A3, 69–85% reduction, ~75–86% goal rate), but fail when attackers camouflage links or use gradient additions (mean reduction across all attacks: -23.3% and -24.0%).
+  - **Bharat-Henzinger (D2):** Strong median reduction (89.4%), but incurs **59.6% clean NDCG loss** (Clean Top-20 Jaccard 0.254), meeting the proposal goal in only 1.8% of cells.
+  - **Randomized HITS (D1, $\epsilon=0.15$):** Clean NDCG loss is only **0.1%**, but mean reduction is -72.6% (median -1.0%) because uniform teleport spreads authority proportionally to in-degree.
+  - **Hub Capping (D3, 10%):** Exact no-op (0.0% reduction, 0.0% clean NDCG loss) because the 10% threshold was never exceeded.
+- **Limits:** Fixed parameter thresholds were evaluated; dynamic or calibrated thresholds may improve performance.
 
 ---
 
 ## 7. Problems Encountered and Deviations
 
 1. **WEBSPAM-UK2006 Hostgraph Bitstream Compression:**
-   - *Issue:* The host labels (`webspam-uk2006-set1-labels.txt`) were successfully downloaded and parsed. However, the host link graph is stored in WebGraph bitstream format (`.graph` / `.properties`) hosted on University of Milan LAW servers, requiring Java WebGraph libraries (`BVGraph` / `ArcListASCIIGraph`).
-   - *Deviation:* To keep mid-project experiments 100% offline and runnable on a laptop, we ran all mid-term experiments on three real SNAP web graphs (`wiki-Vote`, `web-Stanford`, `web-NotreDame`) and synthetic benchmarks. Manual Java extraction instructions have been documented in [`docs/WEBSPAM_MANUAL_STEPS.md`](WEBSPAM_MANUAL_STEPS.md).
+   - *Issue:* The host labels (`webspam-uk2006-set1-labels.txt`) were successfully downloaded and parsed. However, the host link graph (`uk-2006-05.host.graph`, ~1.9 MB, 11,402 hosts) is stored in WebGraph BVGraph bitstream format, requiring Java extraction tools (`BVGraph` / `ArcListASCIIGraph`).
+   - *Deviation:* Mid-project experiments evaluated on real SNAP web graphs (`wiki-Vote`, `web-Stanford`, `web-NotreDame`) and synthetic benchmarks. Manual Java extraction instructions have been documented in [`docs/WEBSPAM_MANUAL_STEPS.md`](WEBSPAM_MANUAL_STEPS.md).
 2. **SALSA Convergence on Multi-Component Base Sets:**
-   - *Issue:* In disconnected bipartite components, pure SALSA transition matrices contain multiple unit eigenvalues, causing standard power iteration to oscillate or stall without convergence.
+   - *Issue:* In disconnected bipartite components, pure SALSA transition matrices contain multiple unit eigenvalues, causing standard power iteration to stall.
    - *Solution:* Implemented an ergodic teleport parameter ($\epsilon = 10^{-4}$) in [`src/rankers/salsa.py`](../src/rankers/salsa.py), guaranteeing strict positive Perron-Frobenius convergence.
-3. **Power Iteration Metric Bounds with Injected Nodes:**
-   - *Issue:* Standard NDCG and Jaccard functions failed when computing metrics between clean vectors of length $N$ and attacked vectors of length $N + k_{fake}$.
-   - *Solution:* Updated [`src/eval/metrics.py`](../src/eval/metrics.py) to assign zero ground-truth relevance to injected attacker nodes.
+3. **Metric Calculation on Non-Positive Attack Gains:**
+   - *Issue:* When undefended attack gain was zero or negative, the metric `defense_attack_success_reduction` mapped to 1.0 (100% reduction), inflating Undefended HITS to 23.6%.
+   - *Solution:* Filtered out cells with non-positive undefended attack gain ($n=34$), reporting true defense reduction on genuine attacks ($n=110$).
 
 ---
 
 ## 8. Path to Final Submission
-- **Milestone 1 (28 Oct 2026):** Execute Java BVGraph ASCII extraction for WEBSPAM-UK2006 hostgraph as documented in `docs/WEBSPAM_MANUAL_STEPS.md`; compute baseline spam@k and AUC on full hostgraph.
-- **Milestone 2 (1 Nov 2026):** Execute complete experimental matrix across all 8 attack variants (A1-A6) and 8 defense variants on `web-NotreDame` and WEBSPAM.
-- **Milestone 3 (8 Nov 2026):** **EXPERIMENTS FREEZE.** Lock all raw CSVs, regenerate final 300 DPI publication figures, and conduct final Wilcoxon hypothesis tests.
-- **Milestone 4 (15 Nov 2026):** Final Report and Slide Deck submission.
+- **Milestone 1 (Planned: 28 Oct 2026):** Execute Java BVGraph ASCII extraction for WEBSPAM-UK2006 hostgraph as documented in `docs/WEBSPAM_MANUAL_STEPS.md`; compute baseline spam@k and AUC on full hostgraph.
+- **Milestone 2 (Planned: 1 Nov 2026):** Execute complete experimental matrix across all 8 attack variants (A1-A6) and defenses on `web-NotreDame` and WEBSPAM.
+- **Milestone 3 (Planned: 8 Nov 2026):** **EXPERIMENTS FREEZE.** Lock all raw CSVs, regenerate final 300 DPI publication figures, and conduct final Wilcoxon hypothesis tests.
+- **Milestone 4 (Planned: 15 Nov 2026):** Final Report and Slide Deck submission.
 
 ### Status of Stretch Objectives:
-1. **Game-Theoretic Attacker-Defender Loop:** *Pending.* (Code scaffold planned for 30 Oct).
-2. **Closed-Form Spectral Robustness Bound:** *In Progress.* (Theoretical proof verifying minimal budget $B^*(k)$ as a function of the second singular value $\sigma_2$).
-3. **WEBSPAM-UK2007 Multi-Feature Classifier:** *Pending.* (Dependent on Milestone 1 data pipeline).
+1. **Game-Theoretic Attacker-Defender Loop:** **NOT STARTED.** (Planned for final sprint).
+2. **Closed-Form Spectral Robustness Bound:** **PARTIAL.** (Empirical takeover at $p \approx 0.82 \sigma_1^2$ observed; mathematical closed-form proof and generalized bound NOT STARTED).
+3. **WEBSPAM-UK2007 Multi-Feature Classifier:** **NOT STARTED.** (Dependent on Milestone 1 data pipeline).
 
 ---
 
-## 9. Contribution Matrix Draft (Tentative - CONFIRM WITH TEAM)
+## 9. Contribution Matrix Draft (PLANNED Ownership - CONFIRM WITH TEAM)
 
-| Member | Assigned Area | Components Completed for Mid-Project Checkpoint | Status |
-|---|---|---|---|
-| **Shrisay Shandilya** | Rankers, Data Loaders, Base-Set Pipeline | Built sparse power iteration HITS, PageRank, SALSA, and In-degree rankers; created SNAP loader, WEBSPAM label loader with undecided handling, Kleinberg base-set builder, and clean baseline evaluation script. | **CONFIRM WITH TEAM** |
-| **Vibhor Rathi** | Adversarial Link Injection Attacks | Implemented threat model and attacks A1 (Single Hub), A2 (Hub Farm), A3 (Bipartite Block), A4 (Hub Inflation), A5 (Cross-Score), and A6 (Greedy Gradient with candidate re-verification); built validation suite. | **CONFIRM WITH TEAM** |
-| **Prachi Jain** | Defenses, Evaluation Metrics, and Statistical Suite | Implemented defenses D1 (Randomized/Subspace), D2 (Bharat-Henzinger), D3 (Hub Capping), D4 (Wu-Davison), D5 (Trust HITS); implemented bootstrap 95% CIs and Wilcoxon testing suite; ran defense evaluation and figure generation. | **CONFIRM WITH TEAM** |
+*Current Git Commits (`git shortlog -sn --all`): 9 Shrisaysalot.*  
+The table below reflects **PLANNED ownership areas** for final project delivery, subject to team confirmation:
+
+| Member | Planned Area of Ownership | Status |
+|---|---|---|
+| **Shrisay Shandilya** | Rankers, Data Loaders, Base-Set Pipeline, Clean Baselines | **CONFIRM WITH TEAM** |
+| **Vibhor Rathi** | Adversarial Link Injection Attacks (A1–A6) & Validation Suite | **CONFIRM WITH TEAM** |
+| **Prachi Jain** | Algorithmic Defenses (D1–D5), Statistical Testing Suite & Figures | **CONFIRM WITH TEAM** |
 
 ---
 
 ## 10. Reproduction Commands & Deliverable Manifest
 
 ### Exact Reproduction Commands
-From the repository root (`c:\Users\shris\OneDrive\Desktop\LinkRank_Under_Attack`):
+From the repository root:
 
 ```bash
 # 1. Install dependencies
@@ -261,9 +311,9 @@ python scripts/generate_figures.py
 ### Manifest of Generated Artifacts for the 4-Page PDF
 
 #### Figures (`figures/`)
-- [`figures/cost_curves_rank_gain.png`](../figures/cost_curves_rank_gain.png): 300 DPI dual-panel chart of Normalized Rank Gain and Top-10 Entry Rate vs Attacker Budget on Synthetic BA-500 and SNAP web-Stanford base set across HITS, PageRank, SALSA, and In-degree.
-- [`figures/h2_spectral_takeover.png`](../figures/h2_spectral_takeover.png): 300 DPI dual-panel chart of Target Authority and Target Rank vs Farm Size $p$, with the theoretical threshold $\sigma_1^2$ annotated illustrating the abrupt bifurcation of HITS vs smooth PageRank.
-- [`figures/defenses_tradeoff.png`](../figures/defenses_tradeoff.png): 300 DPI Pareto plot showing Attack Success Reduction (%) vs Clean Graph NDCG Loss across defenses D1-D5.
+- [`figures/cost_curves_rank_gain.png`](../figures/cost_curves_rank_gain.png): 300 DPI 8-panel chart of Normalized Rank Gain vs Attacker Budget across all attack families (A1–A6) for HITS, PageRank, SALSA, and In-degree (marked Preliminary).
+- [`figures/h2_spectral_takeover.png`](../figures/h2_spectral_takeover.png): 300 DPI dual-panel chart of Target Authority and Target Rank vs Farm Size $p$, with the theoretical threshold $\sigma_1^2$ annotated illustrating abrupt HITS bifurcation vs smooth PageRank (marked Preliminary).
+- [`figures/defenses_tradeoff.png`](../figures/defenses_tradeoff.png): 300 DPI Pareto plot showing Attack Success Reduction (%) vs Clean Graph NDCG Loss across defenses D1-D5 (marked Preliminary - Small-N).
 - [`figures/architecture.png`](../figures/architecture.png) and [`figures/architecture.svg`](../figures/architecture.svg): End-to-end system architecture diagram clearly highlighting BUILT vs PENDING components.
 
 #### Raw Data Tables (`results/`)
