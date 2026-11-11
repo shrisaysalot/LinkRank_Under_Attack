@@ -25,7 +25,7 @@ plt.rcParams.update({
 
 def plot_h2_takeover():
     print("Generating H2 spectral takeover figure...")
-    df = pd.read_csv("results/h2_robustness_v3.csv")
+    df = pd.read_csv("results/h2_robustness_final.csv")
     fig, axes = plt.subplots(1, 2, figsize=(13, 5), dpi=300)
 
     # Panel A: Ratio p*(10) / sigma1^2 across graphs
@@ -75,7 +75,7 @@ def plot_h2_takeover():
 
 def plot_defense_tradeoff():
     print("Generating Defense Trade-Off figure...")
-    df = pd.read_csv("results/defenses_eval_v3.csv")
+    df = pd.read_csv("results/defenses_eval_final.csv")
     df_pos = df[df["base_gain"] > 0]
 
     fig, ax = plt.subplots(figsize=(9, 6), dpi=300)
@@ -125,7 +125,7 @@ def plot_defense_tradeoff():
 
 def plot_cost_curves_per_attack():
     print("Generating Cost Curves per Attack figure...")
-    df = pd.read_csv("results/cost_curves_v3.csv")
+    df = pd.read_csv("results/cost_curves_final.csv")
     attacks = sorted(df["attack"].unique())
     budgets = sorted(df["budget"].unique())
 

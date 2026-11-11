@@ -74,3 +74,14 @@ def test_webspam_hostgraph_loader():
     df_keep = load_webspam_labels(split="set1", undecided_mode="keep")
     assert "undecided" in df_keep["raw_label"].values
     assert (df_keep["binary_label"] == -1).sum() > 0
+
+
+def test_webspam_labels_disjoint():
+    df1 = load_webspam_labels(split="set1", undecided_mode="keep")
+    df2 = load_webspam_labels(split="set2", undecided_mode="keep")
+    assert len(df1) == 8415
+    assert len(df2) == 2247
+    s1 = set(df1["host"])
+    s2 = set(df2["host"])
+    assert len(s1.intersection(s2)) == 0, "Set 1 and Set 2 must be strictly disjoint!"
+

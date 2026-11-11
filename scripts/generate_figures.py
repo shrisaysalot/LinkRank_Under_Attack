@@ -227,10 +227,17 @@ def generate_architecture_diagram():
     c_border_built = "#28A745"
     c_pending = "#FFF3CD"
     c_border_pending = "#FFC107"
+    c_scoped = "#EDF2F7"
+    c_border_scoped = "#718096"
 
     def draw_box(x, y, w, h, title, items, status="BUILT"):
-        fill = c_built if status == "BUILT" else c_pending
-        border = c_border_built if status == "BUILT" else c_border_pending
+        if status == "BUILT":
+            fill, border, badge_color = c_built, c_border_built, "#155724"
+        elif status == "SCOPED OUT":
+            fill, border, badge_color = c_scoped, c_border_scoped, "#4A5568"
+        else:
+            fill, border, badge_color = c_pending, c_border_pending, "#856404"
+
         box = patches.FancyBboxPatch(
             (x, y), w, h,
             boxstyle="round,pad=0.2,rounding_size=0.3",
@@ -239,7 +246,6 @@ def generate_architecture_diagram():
             linewidth=2.2
         )
         ax.add_patch(box)
-        badge_color = "#155724" if status == "BUILT" else "#856404"
         ax.text(x + 0.2, y + h - 0.42, title, fontsize=13.5, fontweight="bold", color="#1F2D3D")
         ax.text(x + w - 0.2, y + h - 0.42, f"[{status}]", fontsize=11, fontweight="bold", color=badge_color, ha="right")
 
@@ -278,10 +284,10 @@ def generate_architecture_diagram():
         "D1: Randomized HITS (eps=0.15)",
         "D1: Subspace HITS (k=5)",
         "D2: Bharat-Henzinger (1/k weighting)",
-        "D3: Hub-Contribution Capping (1%)",
+        "D3: Hub Capping (1% calibrated)",
         "D4: Wu-Davison Mutual Overlap",
-        "D4b: Wu-Davison Out-Link Jaccard",
-        "D5: Trust HITS; Combined D4+D1/D5",
+        "D5: Trust HITS (PR seeds, k=20)",
+        "Combined: D4+D1 and D4+D5",
     ], status="BUILT")
 
     draw_box(5.1, 0.5, 3.8, 3.4, "5. Evaluation Suite", [
@@ -290,16 +296,16 @@ def generate_architecture_diagram():
         "Top-k Jaccard & NDCG Fidelity",
         "Bootstrap 95% CIs (1,000 boot)",
         "Independent Wilcoxon & Holm FWER",
-        "ROC-AUC / F1 Link Spam Flags",
+        "WEBSPAM Real Attack & Spam Ranks",
     ], status="BUILT")
 
     draw_box(9.5, 0.5, 4.0, 3.4, "6. Stretch Objectives", [
-        "Empirical Spectral Bound p*(k)",
-        "Adaptive Attacker-Defender Loop",
-        "Calibration Sensitivity Sweeps",
-        "Counterexample Eigengap Diagnostic",
-        "WEBSPAM-UK2007 (Pending Freeze)",
-    ], status="BUILT")
+        "• (a) Closed-Form Spectral Bound",
+        "• (b) Game-Theoretic Loop",
+        "• (c) WEBSPAM-UK2007 Classifier",
+        "Status: Not Pursued (Scoped Out)",
+        "Focus on Empirical Core & WEBSPAM",
+    ], status="SCOPED OUT")
 
     # Connectors
     arrow_props = dict(facecolor="#495057", edgecolor="#495057", width=1.5, headwidth=6, shrink=0.05)
