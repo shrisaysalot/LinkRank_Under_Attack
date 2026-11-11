@@ -1,4 +1,4 @@
-# Final Evidence Pack & Fact Sheet (v3.1 Final)
+# Final Evidence Pack & Fact Sheet (v3.2 Final)
 ## LinkRank Under Attack: Adversarial Robustness of HITS
 
 ---
@@ -40,7 +40,7 @@
 | **Attacks** | A6: Greedy Gradient Edge Choice | **DONE** | [`src/attacks/a6_greedy_gradient.py`](../src/attacks/a6_greedy_gradient.py) | Ranks edge additions by $\partial \sigma_1 / \partial A_{ij} = h_i a_j$ with candidate re-verification. |
 | **Attacks** | Camouflaged Farm ($r \in \{2, 5, 10\}$) | **DONE** | [`scripts/run_defense_matrix_v3.py`](../scripts/run_defense_matrix_v3.py) | Injects fake hubs linking to target plus $r$ random legitimate web pages. |
 | **Defenses** | D2: Bharat-Henzinger Edge Weighting | **DONE** | [`src/defenses/d2_bharat_henzinger.py`](../src/defenses/d2_bharat_henzinger.py) | Down-weights multiple edges between the same source and destination domains ($1/k$). |
-| **Defenses** | D3: Hub-Contribution Capping | **DONE** | [`src/defenses/d3_hub_capping.py`](../src/defenses/d3_hub_capping.py) | Calibrated 1% hub mass capping actively binds and mitigates dominant hubs. |
+| **Defenses** | D3: Hub-Contribution Capping | **DONE** | [`src/defenses/d3_hub_capping.py`](../src/defenses/d3_hub_capping.py) | Calibrated 1% hub mass capping actively binds on calibration graph; evaluated on full matrix. |
 | **Defenses** | D4: Wu-Davison Link-Farm Reweighting | **DONE** | [`src/defenses/d4_wu_davison.py`](../src/defenses/d4_wu_davison.py) | Mutual in/out link farm detection (threshold $\theta=0.50$); D4b removed as functionally redundant. |
 | **Defenses** | D5: Trust-Based HITS | **DONE** | [`src/defenses/d5_trust_hits.py`](../src/defenses/d5_trust_hits.py) | Injects TrustRank seed prior; tested Clean PageRank ($k=20$) vs In-Degree ($k=20$) seeds. |
 | **Defenses** | Combined Defenses (D4+D1, D4+D5) | **DONE** | [`scripts/run_defense_matrix_v3.py`](../scripts/run_defense_matrix_v3.py) | Couples link farm edge down-weighting with spectral / trust random resets. |
@@ -138,39 +138,40 @@
 
 ### 4.3 Hypothesis Verdicts (Evaluated Strictly Against Original Proposal Wording)
 
-#### Hypothesis H1: "In-degree centrality is cheaper to manipulate than HITS (lower $B^*$ for equal rank gain)."
-- **Verdict:** **SUPPORTED**
+#### Hypothesis H1: "HITS and in-degree attack costs are similar on random graphs (comparable $B^*$ for equal rank gain)."
+- **Verdict:** **NOT SUPPORTED**
 - **Empirical Evidence ($n=25$ independent target instances across 5 ER random graphs):**
   - Budget to reach Top-10: In-Degree requires $B^*(10) = \mathbf{8.60}$ edges [95% CI: $7.60, 9.40$] vs HITS $B^*(10) = \mathbf{31.40}$ edges [95% CI: $28.20, 34.20$].
-  - Cost Ratio ($B^*_{\text{HITS}} / B^*_{\text{InDeg}}$) = $\mathbf{3.820}$ [95% CI: $3.439, 4.200$] ($p = 5.96 \times 10^{-8}$, Wilcoxon signed-rank test).
+  - Cost Ratio ($B^*_{\text{HITS}} / B^*_{\text{InDeg}}$) = $\mathbf{3.820}$ [95% CI: $3.439, 4.200$] ($p = 5.96 \times 10^{-8}$, Wilcoxon signed-rank test; note that $5.96 \times 10^{-8}$ is the exact mathematical minimum possible two-sided signed-rank p-value for $n=25$).
   - Budget to reach Rank-1: In-Degree requires $B^*(1) = \mathbf{11.00}$ edges [95% CI: $10.00, 12.00$] vs HITS $B^*(1) = \mathbf{37.60}$ edges [95% CI: $35.20, 40.00$] (ratio = $\mathbf{3.547}$ [95% CI: $3.213, 3.893$], $p = 5.96 \times 10^{-8}$).
-- **Mechanism & Limits:** In-degree requires ~3.8x fewer edges because each added in-link directly increases in-degree score by 1, whereas HITS requires overcoming the principal eigenvalue barrier ($\sigma_1^2$) of the legitimate network.
+- **Empirical Observation (New Finding):** In-degree centrality is significantly cheaper to manipulate than HITS in random networks (~3.8x fewer edges). This finding refutes the proposal hypothesis that their attack costs would be similar, demonstrating that HITS's spectral coupling provides a substantial non-linear barrier against degree-based attacks.
 
 #### Hypothesis H2: "Spectral takeover occurs abruptly at a critical budget $p^* \approx \sigma_1^2$, where the attacker's subgraph eigenvalue exceeds the host graph's leading eigenvalue."
-- **Verdict:** **SUPPORTED**
+- **Verdict:** **SUPPORTED (QUALIFIED)**
 - **Empirical Evidence ($n=125$ instances across 5 graphs: BA-500, ER-500, SBM-500, web-Stanford base set, web-NotreDame base set):**
   - $\sigma_1^2 \ge \max(d_{in})$ holds in **100.0% of instances** ($125/125$).
   - Abrupt takeover occurs in **73.6% of instances** ($92/125$). Mean single-step rank jump is **61.5 ranks** for HITS vs **15.2 ranks** for PageRank.
-  - Empirical critical takeover budgets normalize tightly to the leading singular value:
+  - Empirical critical takeover budgets normalize to the leading singular value:
     - Critical Top-10: $p^*(10) / \sigma_1^2 = \mathbf{0.713}$ [95% CI: $0.656, 0.768$].
     - Critical Rank-1: $p^*(1) / \sigma_1^2 = \mathbf{0.841}$ [95% CI: $0.807, 0.876$].
-- **Counterexample Diagnostic:** In the 26.4% of instances ($33/125$) where takeover is non-abrupt, the graph exhibits a severely contracted eigengap ($\sigma_1 - \sigma_2 = 2.51$ vs $13.53$ in abrupt cases) and the target begins already near top ranks (mean initial rank $214.9$ vs $465.0$).
+- **Qualifications:**
+  1. The 95% bootstrap confidence intervals for both Top-10 ($[0.656, 0.768]$) and Rank-1 ($[0.807, 0.876]$) strictly exclude 1.0, showing that takeover occurs at a fraction below the theoretical upper bound $\sigma_1^2$.
+  2. The counterexample diagnostic (in the 26.4% non-abrupt cases, eigengap is contracted to $2.51$ vs $13.53$ and starting rank is higher at $214.9$ vs $465.0$) is an empirical correlational observation, not a formal causal proof.
 
 #### Hypothesis H3: "Community attachment (A5) reduces attack cost compared to isolated hub farms (A2) in community-structured graphs."
-- **Verdict:** **SUPPORTED**
+- **Verdict:** **NOT SUPPORTED AS A COMMUNITY EFFECT**
 - **Empirical Evidence ($n=30$ instances evaluated up to $B=500$):**
-  - On Planted SBM ($n=15$), A5 achieves a mean cost saving of $\mathbf{33.3\%}$ [95% CI: $33.3\%, 33.3\%$].
-  - On ER control graphs ($n=15$), A5 achieves a mean cost saving of $\mathbf{36.7\%}$ [95% CI: $26.7\%, 46.7\%$].
-  - Both A2 and A5 achieve Top-10 entry in $100\%$ ($30/30$) of instances when budget is expanded to $B=500$, resolving the mid-project undefined/NaN limitation.
-- **Mechanism:** Injected hubs linking to existing authorities inherit their high hub-authority scores through mutual reinforcement, requiring fewer total edges than bootstrapping an isolated clique.
+  - On Planted SBM ($n=15$), A5 achieves a cost saving of **33.3%** [95% CI: $33.3\%, 33.3\%$]. Note: the zero-width confidence interval $[33.3\%, 33.3\%]$ is a discrete grid artifact; all 15 SBM instances required exactly $B=75$ for A2 and $B=50$ for A5 on the evaluated budget grid, yielding $(75-50)/75 = 1/3 \approx 33.3\%$.
+  - On ER control graphs ($n=15$), A5 achieves a comparable or slightly higher cost saving of **36.7%** [95% CI: $26.7\%, 46.7\%$].
+- **Conclusion:** Because attaching fake hubs to existing authorities saves ~33-37% edge budget equally on random graphs without community structure as on community-structured graphs, the cost saving is an inherent property of cross-score reinforcement, NOT a community-specific effect.
 
 #### Hypothesis H4: "Defense Pareto trade-off: link farm detection defenses reduce attack success by at least 50% with less than 5% loss in clean ranking utility."
-- **Verdict:** **NOT SUPPORTED GLOBALLY (SUPPORTED WITH NUANCE ONLY FOR ISOLATED TOPOLOGICAL FARMS)**
-- **Empirical Evidence ($n=644$ positive undefended gain cells per defense):**
+- **Verdict:** **NOT SUPPORTED GLOBALLY**
+- **Empirical Evidence ($n=644$ positive undefended gain cells per defense row):**
   - Calibrated Wu-Davison D4 ($\theta=0.50$) achieves **93.3% median reduction** against A2 Hub Farm and **97.3%** against A3 Bipartite Block with minimal clean utility loss on synthetic graphs.
   - However, on real web base sets, D4 clean NDCG@20 loss reaches **10.56%** ($> 5\%$).
   - Furthermore, Camouflaged farms ($r \in \{2, 5, 10\}$) and Greedy Gradient (A6) dilute out-link Jaccard similarity below $\theta=0.50$, resulting in **0.0% attack reduction**.
-  - Therefore, **no defense achieves $\ge 50\%$ reduction at $\le 5\%$ clean NDCG loss globally across all attack families**.
+  - Overall, D4 meets the goal criteria in only **32.1% of cells (does not meet goal overall)**. No defense achieves $\ge 50\%$ reduction at $\le 5\%$ clean NDCG loss globally across all attack families.
 
 ---
 
@@ -185,7 +186,7 @@
 | **D1: Subspace HITS ($k=5$)** | 0.0% | -256.1% [-358.9%, -163.7%] | 18.8% | 0.571 | 6.1% | 0.020 |
 | **D2: Bharat-Henzinger ($1/k$)** | 46.4% | -32.0% [-71.8%, +4.0%] | 60.8% | 0.120 | 0.0% | 0.006 |
 | **D3: Hub Capping (1% calibrated cap)**| 0.0% | -103.0% [-143.5%, -64.4%] | 1.0% | 0.886 | 3.0% | 0.003 |
-| **D4: Wu-Davison Mutual ($\theta=0.5$)** | 0.0% (Overall) / **93.3%** (A2) / **97.3%** (A3) | +2.5% [-12.0%, +14.1%] | 10.6% | 0.884 | **32.1%** (Overall) / **81.8%** (A2) / **86.0%** (A3) | 0.005 |
+| **D4: Wu-Davison Mutual ($\theta=0.5$)** | 0.0% (Overall) / **93.3%** (A2) / **97.3%** (A3) | +2.5% [-12.0%, +14.1%] | 10.6% | 0.884 | **32.1% (does not meet goal overall)** / **81.8%** (A2) / **86.0%** (A3) | 0.005 |
 | **D5: Trust HITS (PageRank Seeds $k=20$)**| 9.9% | -44.8% [-90.3%, -11.8%] | 11.6% | 0.529 | 4.8% | 0.003 |
 | **D5: Trust HITS (InDegree Seeds $k=20$)** | 2.5% | +1.6% [-14.2%, +13.7%] | 4.4% | 0.676 | 6.8% | 0.003 |
 | **Combined: D4 + D1** | 0.0% (Overall) / **49.5%** (A2) / **85.1%** (A3) | -78.4% [-117.1%, -42.0%] | 12.8% | 0.770 | 25.0% | 0.005 |
@@ -218,7 +219,7 @@
 #### Clean Host Graph Ranking Benchmark ($N=11,402$ Hosts, $730,774$ Edges)
 *Dataset:* [`results/webspam_clean_ranking_final.csv`](../results/webspam_clean_ranking_final.csv)
 
-| Algorithm / Defense | Spam@100 | Spam@500 | Spam@1000 | Spam@2000 | Median Spam Rank | Median Norm Rank | All Labeled AUC | Set 2 Test AUC | Prevalence-Aware F1 | Runtime (s) |
+| Algorithm / Defense | Spam@100 | Spam@500 | Spam@1000 | Spam@2000 | Median Spam Rank | Median Norm Rank | All Labeled AUC | Set 2 Test AUC (Unbiased) | Prevalence-Aware F1 | Runtime (s) |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **InDegree** | 0 (0.0%) | 0 (0.0%) | 0 (0.0%) | 28 (1.4%) | 6,182.0 | 5,062.0 | 0.428 | 0.622 | 0.019 (All) / 0.770 (Set 2) | 0.005 |
 | **PageRank ($\alpha=0.85$)** | 0 (0.0%) | 17 (3.4%)| 30 (3.0%) | 312 (15.6%)| 7,544.0 | 5,042.0 | 0.385 | 0.421 | 0.165 (All) / 0.616 (Set 2) | 0.152 |
@@ -227,7 +228,11 @@
 | **D1 Randomized ($\epsilon=0.15$)**| 0 (0.0%) | 0 (0.0%) | 0 (0.0%) | 33 (1.7%) | 5,509.0 | 5,651.0 | 0.461 | 0.686 | 0.022 (All) / 0.776 (Set 2) | 0.083 |
 | **D3 Hub Capping (1% cap)**| 0 (0.0%) | 0 (0.0%) | 0 (0.0%) | 27 (1.4%) | 5,538.0 | 5,622.0 | 0.455 | 0.679 | 0.021 (All) / 0.774 (Set 2) | 0.127 |
 | **D4 Wu-Davison ($\theta=0.5$)**| 0 (0.0%) | 0 (0.0%) | 0 (0.0%) | 17 (0.9%) | 5,900.0 | 5,305.0 | 0.415 | 0.650 | 0.014 (All) / 0.761 (Set 2) | 10.339 |
-| **D5 Trust HITS (Set 1 Normal)**| 0 (0.0%) | 0 (0.0%) | 0 (0.0%) | 7 (0.4%) | 6,350.0 | 4,897.0 | 0.344 | 0.675 | 0.005 (All) / 0.773 (Set 2) | 0.047 |
+| **D5 Trust HITS (Set 1 Normal Seeds)\***| 0 (0.0%) | 0 (0.0%) | 0 (0.0%) | 7 (0.4%) | 6,350.0 | 4,897.0 | 0.344 (leaked) | 0.675 (unbiased) | 0.005 (All) / 0.773 (Set 2) | 0.047 |
+
+*\*Methodological Note on AUC & D5 Data Leakage:*
+1. **AUC < 0.5 Interpretation:** When using authority score directly as a spam predictor, all algorithms yield AUC $< 0.50$ on All Labeled hosts (e.g. HITS AUC = 0.455). This indicates that authority scores are **not a spam detector**; top authorities are dominated by legitimate institutional domains (`gov.uk`, `ac.uk`), while spam is relegated to the low-degree tail. Inverting the score yields AUC $\approx 0.545$, showing that graph centrality alone offers near-random discrimination on raw host graphs without content features.
+2. **D5 Data Leakage:** D5 was seeded with Set 1 normal hosts. Because the "All Labeled" benchmark includes Set 1, this introduces evaluation leakage on that column. Unbiased evaluation must be read strictly from **Set 2 Test AUC (0.675)**, which is 100% disjoint from the seed set.
 
 *Precision & Recall Findings:*
 - **Precision at Top 1% ($k=114$ hosts):** **0.0%** across ALL rankers. Natural web spam is completely absent from top authority tiers.
@@ -238,34 +243,30 @@
 *Dataset:* [`results/webspam_attack_final.csv`](../results/webspam_attack_final.csv)
 
 - **Target Sample:** 10 hosts selected across clean HITS rank tiers (5 Normal: nodes 0, 1, 54, 135, 2544; 5 Spam: nodes 61, 212, 30, 275, 7297), clean ranks spanning $2,177$ to $9,879$.
-- **Budgets Evaluated:** $B \in \{10, 100, 1000\}$ fake hub pages.
-- **Spectral Scale Barrier ($\sigma_1^2 = 115,407.4$):**
-  - At $B = 10$: $p / \sigma_1^2 = 0.000087 \ll 0.713$.
-  - At $B = 100$: $p / \sigma_1^2 = 0.000866 \ll 0.713$.
-  - At $B = 1000$: $p / \sigma_1^2 = 0.008665 \ll 0.713$.
-- **Empirical Attack Findings:**
-  - **HITS Spectral Robustness:** Under A2 Hub Farm, even at $B = 1000$ edges, the maximum rank improvement observed across all targets is only **76 ranks** (e.g. from rank 9,879 to 9,803).
-  - **Zero Top-100 Entry & Zero Takeover:** Under HITS, Top-100 entry occurs in **0.0% of trials** ($0/60$) and spectral takeover occurs in **0.0% of trials** ($0/60$).
-  - **PageRank Vulnerability:** In sharp contrast, PageRank promotes the target to **Rank 1 in 100% of A2 trials at $B=1000$** ($20/20$ trials), exhibiting rank jumps of over $11,000$ positions.
-  - **A5 Cross-Score on Host Graph:** Linking to top authorities improves target rank by up to $1,004$ positions at $B=1000$ (e.g. from 9,879 to 8,875), but still remains over $8,700$ positions away from Top-100 entry.
-  - **Defenses on Attacked Host Graph:** D3 hub capping ($1\%$ cap) gives rank identical to undefended HITS because no farm hub achieves $1\%$ of total hub mass. Wu-Davison D4 successfully penalizes the fake hubs, reducing attack gain.
+- **Budgets Evaluated:** $B \in \{10, 100, 1000\}$ fake hub pages under A2 (pure hub farm) and A5 (cross-score coupling to top authorities).
+- **Measured Empirical Attack Results:**
+  - **HITS Spectral Robustness:** Under A2 Hub Farm, even at $B = 1000$ edges, the maximum rank improvement observed across all targets is only **76 ranks** (e.g. node 0 moved from rank 9,879 to 9,803; node 61 moved from 8,110 to 8,088).
+  - **Zero Top-100 Entry & Zero Takeover:** Under HITS, Top-100 entry occurs in **0.0% of trials (0/60)** and spectral takeover occurs in **0.0% of trials (0/60)**.
+  - **PageRank Vulnerability:** In sharp contrast, PageRank promotes the target to **Rank 1 in 20/20 trials under A2 at $B=1000$** (targets jump from ranks 4,303–11,082 directly to rank 1). Under A5 at $B=1000$, PageRank promotes the target to Top-100 in **20/20 trials** (reaching ranks 68–70).
+  - **A5 Cross-Score on Host Graph:** Linking to top authorities improves target HITS rank by up to $1,004$ positions at $B=1000$ (node 0 from 9,879 to 8,875), but still leaves the target over $8,700$ positions away from Top-100 entry.
+  - **Theoretical Interpretation (Extrapolation):** The clean host graph's leading singular value squared is $\sigma_1^2 = 115,407.4$. At budget $B=1000$, the ratio $p / \sigma_1^2 = 0.008665 \ll 0.713$. We hypothesize that this spectral scale disparity explains the observed resistance of HITS, but emphasize this is a theoretical extrapolation from synthetic scaling laws rather than an empirical proof on the host graph.
+  - **Defenses on Attacked Host Graph:** D3 hub capping ($1\%$ cap) yielded defended ranks identical to undefended HITS (9,803 and 8,088 at $B=1000$), confirming that the 1% cap does not bind. Under Wu-Davison D4, defended ranks were measured at **9,394** (for target 0, undefended 9,803) and **7,746** (for target 61, undefended 8,088); this ~400 rank shift reflects global background edge reweighting across dense hostgraph components rather than isolated target neutralization.
 
 ---
 
 ## 5. Corrections vs Mid-Project Report
 
-| Item | Mid-Project Report State | Final Evidence Pack State | Root Cause & Resolution |
+| Item | Mid-Project Report State | Final Evidence Pack State | Root Cause & Resolution (Evidence vs Rewording) |
 |---|---|---|---|
-| **Hypothesis H1 Verdict** | Reported as "Not Supported" | **STRONGLY SUPPORTED** | Mid-project budget scale ($B \le 10$) was too small to detect HITS entry. At $B \ge 25$, In-Degree reaches Top-10 in $8.60$ edges vs HITS $31.40$ edges (ratio = $3.820$, $p = 5.96 \times 10^{-8}$). |
-| **Hypothesis H2 Verdict** | Reported as "Supported (Preliminary)" | **STRONGLY SUPPORTED** | Evaluated on 125 instances (adding web-NotreDame). Proved $\sigma_1^2 \ge \max(d_{in})$ in $100.0\%$, abrupt takeover in $73.6\%$, and counterexamples rigorously diagnosed by collapsed eigengap ($2.51$ vs $13.53$). |
-| **Hypothesis H3 Verdict** | Reported as "Inconclusive" | **SUPPORTED** | Mid-project budget cap ($B=200$) caused A2 to never reach Top-10 on SBM, making $B^*$ undefined / NaN. Raising budget cap to $B=500$ allowed A2 to reach Top-10 in 15/15 instances, confirming $33.3\%$ cost saving for A5. |
-| **Hypothesis H4 Verdict** | Reported as "Not Supported" | **NOT SUPPORTED GLOBALLY (Nuanced)** | D4 achieves $93.3\%$ reduction on A2 and $97.3\%$ on A3, but on real base sets clean NDCG loss reaches $10.56\%$, and camouflage links evade detection ($0.0\%$ reduction). |
-| **A4b vs A5 Duplicate** | Treated as separate attacks with identical numbers | **Proved identical construction; A4b removed** | Both created $p$ fake hubs linking to target + $c$ authorities. A4 restored to proposal definition (target/single fake linking to $c$ authorities); A5 evaluated as cross-score multi-hub; A5b tested as cross-linked variant. |
-| **D4 vs D4b Duplicate** | Evaluated separately with identical columns | **Proved functionally identical; D4b removed** | On synthetic link farms, fake hubs have identical out-link patterns ($J=1.0$), making mutual and out-link Jaccard penalize identical nodes. D4 retained as Wu-Davison; D4b removed. |
-| **D3 Hub Capping No-Op** | Reported as a no-op at cap=0.10 without explanation | **Investigated root cause; evaluated sensitivity sweep** | Across graphs with $N \ge 500$, legitimate max hub shares are $2.2\%$ (ER), $3.8\%$ (BA), and $5.5\%$ (SBM). A $10\%$ cap can never bind. Calibrating to $1\%$ actively binds with $25.8\%$ attack reduction on calibration graph. |
-| **A3 PageRank Flat Curve** | Noted as identical to A1 (0.381 gain) without explanation | **Proved mathematically from PageRank linear system** | Disconnected $K_{p, q}$ where $p=q=\lfloor\sqrt{B}\rfloor$ has zero in-degree hubs transferring $(1-d)/(p N)$ each, yielding $p \times \frac{1-d}{p N} = \frac{1-d}{N}$, exactly equal to a single hub in-link (A1). |
-| **WEBSPAM Set 2 Labels** | Set 2 labels had 0% overlap with host graph | **100% Overlap (2,247/2,247) after stripping URL prefix** | Set 2 hostnames had `http://` prepended. Normalizing hostnames restored 100% reconciliation across both Set 1 ($8,415/8,415$) and Set 2 ($2,247/2,247$). |
-| **Local Paths & Hygiene** | Contained 34 machine-specific paths in audit notes | **100% Clean relative links across all files** | Verified by `git grep -E "file:///|c:\\Users|Users/shris"` returning zero matches in active source and report files. |
+| **Hypothesis H1 Verdict** | Reported as "Not Supported" | **NOT SUPPORTED** | **Corrected from rewording:** The proposal hypothesized that HITS and in-degree attack costs would be similar on random graphs. In v3/v3.0 drafts, H1 was erroneously marked "Supported" by rewording it to "in-degree is cheaper". Restoring the original proposal wording re-establishes the verdict as **NOT SUPPORTED**, while reporting the finding that in-degree requires 3.82x fewer edges ($p=5.96\times 10^{-8}$) as a new empirical observation. |
+| **Hypothesis H2 Verdict** | Reported as "Supported (Preliminary)" | **SUPPORTED (QUALIFIED)** | **Refined from evidence:** Expanded from 60 to 125 instances (adding web-NotreDame base set). Proved $\sigma_1^2 \ge \max(d_{in})$ in $100.0\%$ and abrupt takeover in $73.6\%$. Qualified by noting that empirical CIs ($[0.656, 0.768]$ and $[0.807, 0.876]$) strictly exclude 1.0, and that the eigengap explanation for counterexamples is correlational. |
+| **Hypothesis H3 Verdict** | Reported as "Inconclusive" | **NOT SUPPORTED AS A COMMUNITY EFFECT** | **Refined from evidence:** Mid-project budget cap ($B=200$) left A2 top-10 entry undefined on SBM. Expanding budget to $B=500$ showed A5 achieves a 33.3% saving on SBM, but control experiments on ER random graphs without community structure yielded an equal or higher saving of 36.7%. Thus, the effect is real but not community-specific. |
+| **Hypothesis H4 Verdict** | Reported as "Not Supported" | **NOT SUPPORTED GLOBALLY** | **Confirmed from evidence:** Calibrated Wu-Davison D4 suppresses isolated farms (93.3% on A2, 97.3% on A3), but clean NDCG loss exceeds 5% on real web base sets (10.56%), and camouflage links ($r \in \{2, 5, 10\}$) completely evade detection ($0.0\%$ reduction). Overall meets-goal rate is only 32.1%. |
+| **D3 Hub Capping Reduction** | Reported as a no-op (0.0%) | **0.0% on full matrix (25.8% on calibration graph only)** | **Clarified from evidence:** In v3 drafts, a 25.8% reduction was claimed based on a single calibration graph (seed 9999). On the full evaluation matrix (`defenses_eval_final.csv`), D3 achieves a median reduction of **0.0%** (mean -103.0%), confirming that a 1% cap rarely binds across diverse graph tiers. |
+| **D4 vs D4b Duplicate** | Evaluated separately with identical columns | **Proved functionally equivalent on farms; D4b removed** | **Investigated code vs topology:** Code implementations in `src/defenses/d4_wu_davison.py` are structurally distinct (D4 checks in-links if $jo \in (0.4, 0.6]$, while D4b checks out-links only). However, on all tested link farms, fake hubs share 100% identical out-links ($J=1.0 > 0.6$), triggering the identical out-link branch unconditionally. D4b removed to eliminate redundancy. |
+| **A3 PageRank Flat Curve** | Noted as identical to A1 (0.381 gain) without explanation | **Proved mathematically from PageRank linear system** | **Derived mathematically:** Balanced bipartite cliques $K_{p, q}$ ($p=q=\lfloor\sqrt{B}\rfloor$) with zero-indegree hubs transfer $p \times \frac{1-d}{p N} = \frac{1-d}{N}$ total teleport mass to the target, exactly matching a single hub in-link (A1). |
+| **WEBSPAM Set 2 Labels** | Set 2 labels had 0% overlap with host graph | **100% Overlap (2,247/2,247) after stripping URL prefix** | **Fixed formatting bug:** Set 2 hostnames had `http://` prepended. Normalizing hostnames restored 100% reconciliation across both Set 1 ($8,415/8,415$) and Set 2 ($2,247/2,247$). |
+| **Local Paths & Hygiene** | Contained 34 machine-specific paths in audit notes | **100% Clean relative links across all files** | **Cleaned repo:** Verified by `git grep -E "file:///|c:\\Users|Users/shris"` returning zero matches in active source and report files. |
 
 ---
 
@@ -287,16 +288,21 @@
 ## 7. Hardware, Benchmarks & Library Environment
 
 *Copied directly from [`results/environment.txt`](../results/environment.txt):*
-- **CPU:** 12th Gen Intel Core i5-12500H (12 physical cores: 4 P-cores, 8 E-cores, 16 logical threads).
-- **Operating System:** Microsoft Windows 11 Home (Build 10.0.26100).
-- **Python Version:** Python 3.12.5 (64-bit).
-- **Key Python Packages:**
-  - `networkx`: 3.3
+- **Operating System:** Windows 11 (10.0.26200)
+- **Architecture:** AMD64
+- **Processor:** 12th Gen Intel(R) Core(TM) i5-12500H
+- **Physical Cores:** 12
+- **Logical Processors:** 16
+- **Total Visible RAM:** 15.69 GB (16,849,293,312 bytes)
+- **Python Version:** 3.12.5 (tags/v3.12.5:ff3bc82, Aug 6 2024, 20:45:27) [MSC v.1940 64 bit (AMD64)]
+- **Library Versions:**
   - `numpy`: 1.26.4
-  - `scipy`: 1.13.1
-  - `pandas`: 2.2.2
+  - `scipy`: 1.12.0
+  - `networkx`: 3.4.2
+  - `pandas`: 3.0.5
+  - `matplotlib`: 3.10.8
+  - `psutil`: 7.2.2
   - `scikit-learn`: 1.5.1
-  - `matplotlib`: 3.9.2
   - `pytest`: 9.1.1
 - **Unit Test Suite:** 36 passing tests in $4.79$s.
 - **Runtimes:**
@@ -318,17 +324,12 @@ git shortlog -sn --all
 ```
 
 - **Shrisay Shandilya (`Shrisaysalot`):**
-  - Designed and implemented 100% of the repository codebase across all 16 commits (`main`).
-  - Authored all rankers (sparse HITS, PageRank, SALSA, In-Degree) and synthetic graph generators.
-  - Implemented all 8 attack topologies (A1–A6, Camouflaged farms) and all 10 defense variations (D1–D5, Combined D4+D1/D5).
-  - Engineered the native Python WEBSPAM-UK2006 hostgraph loader and label reconciliation pipeline.
-  - Authored the test suite (expanding from 30 to 36 unit tests, 100% passing).
-  - Executed all experimental runs (Cost Curves Final, H1/H3 Final, H2 Final, Defense Matrix Final, WEBSPAM evaluation & real attacks).
-  - Generated all 300-DPI publication figures and authored `FINAL_REPORT_FACTS.md`.
+  - Planned ownership in proposal: rankers, loaders, base sets.
+  - Actual execution: Designed and implemented 100% of the repository codebase across all 16 commits (`main`), including rankers, synthetic generators, loaders, all 8 attacks, all 10 defenses, test suite (36 unit tests), and experimental evaluation scripts.
 - **Vibhor Rathi:**
-  - *Planned ownership:* Theoretical spectral derivations and background literature synthesis (planned, no commits in git history).
+  - Planned ownership in proposal: attacks (planned, no commits in git history).
 - **Prachi Jain:**
-  - *Planned ownership:* Defense taxonomy review and report formatting (planned, no commits in git history).
+  - Planned ownership in proposal: defenses, evaluation (planned, no commits in git history).
 
 ---
 
@@ -340,6 +341,7 @@ git shortlog -sn --all
 3. [`figures/h2_takeover_v3.png`](../figures/h2_takeover_v3.png): Normalized critical budget $p^*(10) / \sigma_1^2$ bar chart and abruptness boxplot comparing HITS spectral snap to PageRank smooth progression.
 4. [`figures/defense_tradeoff_v3.png`](../figures/defense_tradeoff_v3.png): Security vs clean utility scatter plot mapping median attack reduction against clean NDCG@20 loss with target quadrant.
 5. [`figures/webspam_eval.png`](../figures/webspam_eval.png): WEBSPAM-UK2006 clean rank distribution (boxplots) and real attack on host graph (target rank vs $B$).
+6. *Exploratory Scratch Figure (not part of final claims):* [`figures/empirical_bound.png`](../figures/empirical_bound.png).
 
 ### Empirical Results Data (`results/`)
 1. [`results/cost_curves_final.csv`](../results/cost_curves_final.csv): Full-scale cost curves dataset (33,600 observations across 5 graphs, 5 seeds, 7 attacks, 8 budgets, 4 rankers).
@@ -351,6 +353,7 @@ git shortlog -sn --all
 7. [`results/webspam_clean_ranking_final.csv`](../results/webspam_clean_ranking_final.csv): Full WEBSPAM-UK2006 clean ranking benchmark (Spam@100..2000, AUC, precision/recall at top 1%, 5%, 10%, prevalence-aware F1).
 8. [`results/webspam_attack_final.csv`](../results/webspam_attack_final.csv): Real attack on WEBSPAM host graph (10 target hosts, budgets 10, 100, 1000, A2 & A5).
 9. [`results/environment.txt`](../results/environment.txt): Hardware, OS, Python and package versions specification.
+10. *Exploratory Scratch Artifacts (not part of final claims):* [`results/empirical_bound_regression.csv`](../results/empirical_bound_regression.csv), [`results/attacker_defender_loop.csv`](../results/attacker_defender_loop.csv).
 
 ---
 
