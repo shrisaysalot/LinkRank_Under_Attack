@@ -250,9 +250,9 @@ def generate_architecture_diagram():
         "SNAP wiki-Vote (7,115 n)",
         "SNAP web-Stanford (281k n)",
         "SNAP web-NotreDame (325k n)",
-        "Synthetic BA, ER, SBM",
-        "WEBSPAM labels (8,415 hosts)",
-        "WEBSPAM Host Graph (Pending Java)",
+        "Synthetic BA, ER, SBM (500 n)",
+        "WEBSPAM-UK2006 (10,662 labels)",
+        "WEBSPAM Host Graph (11,402 n)",
     ], status="BUILT")
 
     draw_box(4.9, 4.3, 3.8, 3.2, "2. Attacks Engine", [
@@ -260,9 +260,9 @@ def generate_architecture_diagram():
         "A2: Hub Farm (p hubs)",
         "A3: Bipartite Block (Kp,q)",
         "A4: Proposal Target Inflation",
-        "A4b: Multi-Hub Inflation",
         "A5: Proposal Cross-Score Farm",
-        "A5b: Cross-Links Farm; A6: Greedy",
+        "A5b: Cross-Links; A6: Greedy",
+        "Camouflaged Farm (r=2, 5, 10)",
     ], status="BUILT")
 
     draw_box(9.3, 4.3, 4.2, 3.2, "3. Rankers & Solvers", [
@@ -271,33 +271,35 @@ def generate_architecture_diagram():
         "SALSA with Ergodic Jump",
         "In-Degree Centrality",
         "Sparse ARPACK SVD Eigengap",
+        "Matrix Vectorized Computations",
     ], status="BUILT")
 
     draw_box(0.5, 0.5, 4.0, 3.4, "4. Defenses (D1-D5)", [
         "D1: Randomized HITS (eps=0.15)",
         "D1: Subspace HITS (k=5)",
         "D2: Bharat-Henzinger (1/k weighting)",
-        "D3: Hub-Contribution Capping",
+        "D3: Hub-Contribution Capping (1%)",
         "D4: Wu-Davison Mutual Overlap",
         "D4b: Wu-Davison Out-Link Jaccard",
-        "D5: Trust-Based HITS Prior",
+        "D5: Trust HITS; Combined D4+D1/D5",
     ], status="BUILT")
 
     draw_box(5.1, 0.5, 3.8, 3.4, "5. Evaluation Suite", [
         "Rank Gain & Normalized Gain",
         "B*(10) and B*(20) Thresholds",
         "Top-k Jaccard & NDCG Fidelity",
-        "Kendall Tau & Spearman Rho",
-        "Bootstrap 95% CIs (1,000 resamples)",
-        "Paired Wilcoxon & Holm-Bonferroni",
+        "Bootstrap 95% CIs (1,000 boot)",
+        "Independent Wilcoxon & Holm FWER",
+        "ROC-AUC / F1 Link Spam Flags",
     ], status="BUILT")
 
     draw_box(9.5, 0.5, 4.0, 3.4, "6. Stretch Objectives", [
-        "Game-Theoretic Attacker Loop",
-        "Closed-Form Bound Proof B*(k)",
-        "WEBSPAM-UK2007 Classifier",
-        "(Scheduled for 8 Nov freeze)",
-    ], status="PENDING")
+        "Empirical Spectral Bound p*(k)",
+        "Adaptive Attacker-Defender Loop",
+        "Calibration Sensitivity Sweeps",
+        "Counterexample Eigengap Diagnostic",
+        "WEBSPAM-UK2007 (Pending Freeze)",
+    ], status="BUILT")
 
     # Connectors
     arrow_props = dict(facecolor="#495057", edgecolor="#495057", width=1.5, headwidth=6, shrink=0.05)

@@ -112,3 +112,28 @@ def test_d5_trust_hits(sample_graph):
     assert res.converged
     assert np.isclose(res.scores.sum(), 1.0, atol=1e-5)
     assert np.all(res.scores >= 0)
+
+
+def test_d4_sparse_and_digraph_compatibility(sample_graph):
+    """Verifies D4 and D4b accept both NetworkX DiGraph and CSR matrix inputs."""
+    A = nx.adjacency_matrix(sample_graph, dtype=float).tocsr()
+    res_graph_4 = wu_davison_hits(sample_graph)
+    res_csr_4 = wu_davison_hits(A)
+    assert np.allclose(res_graph_4.scores, res_csr_4.scores, atol=1e-5)
+
+    res_graph_4b = wu_davison_outlink_jaccard_hits(sample_graph)
+    res_csr_4b = wu_davison_outlink_jaccard_hits(A)
+    assert np.allclose(res_graph_4b.scores, res_csr_4b.scores, atol=1e-5)
+
+
+def test_combined_defenses(sample_graph):
+    """Verifies combined D4+D1 and D4+D5 defenses execute properly."""
+    from scripts.run_defense_matrix_v3 import combined_d4_d1_hits, combined_d4_d5_hits
+    res_d4_d1 = combined_d4_d1_hits(sample_graph, overlap_threshold=0.5, eps=0.15)
+    assert np.isclose(res_d4_d1.scores.sum(), 1.0, atol=1e-4)
+    assert np.all(res_d4_d1.scores >= 0)
+
+    res_d4_d5 = combined_d4_d5_hits(sample_graph, trusted_seeds=[0, 1], overlap_threshold=0.5, eps=0.15)
+    assert np.isclose(res_d4_d5.scores.sum(), 1.0, atol=1e-4)
+    assert np.all(res_d4_d5.scores >= 0)
+

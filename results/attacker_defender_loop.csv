@@ -1,0 +1,4 @@
+round,attacker_strategy,defense_threshold,undefended_rank,defended_rank,attack_reduction_pct
+1,A2 Pure Farm (r=0),0.5,267,384,97.5
+2,Adaptive Camouflaged Farm (r=5),0.5,232,231,-0.6451612903225712
+3,Adaptive Camouflaged Farm (r=5),0.35,232,226,-3.8709677419354938

@@ -91,3 +91,29 @@ def test_holm_bonferroni():
     assert np.isclose(adj_p[0], 0.015)
     assert np.isclose(adj_p[1], 0.040)
     assert np.isclose(adj_p[2], 0.100)
+
+
+def test_independent_per_attack_eval():
+    """Tests aggregating paired differences per unit before Wilcoxon testing."""
+    df_dummy = [
+        {"graph": "G1", "target": 1, "ranker": "HITS", "gain": 0.9},
+        {"graph": "G1", "target": 1, "ranker": "PR", "gain": 0.2},
+        {"graph": "G1", "target": 2, "ranker": "HITS", "gain": 0.8},
+        {"graph": "G1", "target": 2, "ranker": "PR", "gain": 0.3},
+        {"graph": "G2", "target": 1, "ranker": "HITS", "gain": 0.95},
+        {"graph": "G2", "target": 1, "ranker": "PR", "gain": 0.1},
+        {"graph": "G2", "target": 2, "ranker": "HITS", "gain": 0.85},
+        {"graph": "G2", "target": 2, "ranker": "PR", "gain": 0.4},
+        {"graph": "G3", "target": 1, "ranker": "HITS", "gain": 0.7},
+        {"graph": "G3", "target": 1, "ranker": "PR", "gain": 0.2},
+        {"graph": "G3", "target": 2, "ranker": "HITS", "gain": 0.75},
+        {"graph": "G3", "target": 2, "ranker": "PR", "gain": 0.25},
+    ]
+    import pandas as pd
+    df = pd.DataFrame(df_dummy)
+    piv = df.pivot(index=["graph", "target"], columns="ranker", values="gain")
+    stat, p = wilcoxon_test(piv["HITS"].values, piv["PR"].values)
+    assert p < 0.05
+    rej, adj_p = holm_bonferroni([p], alpha=0.05)
+    assert rej[0] == True
+
