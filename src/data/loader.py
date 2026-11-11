@@ -104,7 +104,7 @@ def load_webspam_labels(
             parts = line.strip().split()
             if len(parts) < 4:
                 continue
-            host = parts[0]
+            host = parts[0].replace("http://", "").replace("https://", "").rstrip("/")
             raw_label = parts[1].lower()
             try:
                 spamicity = float(parts[2])
@@ -139,3 +139,91 @@ def load_webspam_labels(
             })
 
     return pd.DataFrame(records)
+
+
+def load_webspam_hostgraph(
+    weighted: bool = False
+) -> Tuple[nx.DiGraph, sp.csr_matrix, Dict[int, str], Dict[str, int]]:
+    """Loads the WEBSPAM-UK2006 hostgraph (11,402 hosts, ~730,774 directed edges).
+
+    Parameters
+    ----------
+    weighted : bool
+        If True, edge weights correspond to number of page-to-page links between hosts.
+        If False (default), creates standard unweighted directed 0/1 adjacency matrix.
+
+    Returns
+    -------
+    G : nx.DiGraph
+        Graph with nodes 0..11401 and 'host' attribute.
+    adj : sp.csr_matrix
+        Sparse adjacency matrix.
+    node_to_host : dict
+        Mapping from integer node index 0..11401 to hostname string.
+    host_to_node : dict
+        Mapping from hostname string to integer node index.
+    """
+    hnames_path = RAW_DATA_DIR / "uk-2006-05.hostnames.txt.gz"
+    hgraph_path = RAW_DATA_DIR / "uk-2006-05.hostgraph.txt.gz"
+
+    if not hnames_path.exists() or not hgraph_path.exists():
+        raise FileNotFoundError(
+            f"WEBSPAM hostgraph files not found in {RAW_DATA_DIR}. "
+            f"Run scripts/download_webspam_hostgraph.py first."
+        )
+
+    node_to_host: Dict[int, str] = {}
+    host_to_node: Dict[str, int] = {}
+
+    with gzip.open(hnames_path, "rt", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            nid = int(parts[0])
+            hname = parts[1].replace("http://", "").replace("https://", "").rstrip("/")
+            node_to_host[nid] = hname
+            host_to_node[hname] = nid
+
+    n_nodes = len(node_to_host)
+    G = nx.DiGraph()
+    G.add_nodes_from(range(n_nodes))
+    for nid, hname in node_to_host.items():
+        G.nodes[nid]["host"] = hname
+
+    edges = []
+    weights = []
+
+    with gzip.open(hgraph_path, "rt", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            if not line or "->" not in line:
+                continue
+            src_str, targets_str = line.split("->")
+            src = int(src_str.strip())
+            targets = targets_str.strip().split()
+            for t in targets:
+                if not t:
+                    continue
+                if ":" in t:
+                    dest_str, w_str = t.split(":")
+                    dest = int(dest_str)
+                    w = float(w_str)
+                else:
+                    dest = int(t)
+                    w = 1.0
+                edges.append((src, dest))
+                weights.append(w if weighted else 1.0)
+
+    for (u, v), w in zip(edges, weights):
+        G.add_edge(u, v, weight=w)
+
+    if edges:
+        rows = [e[0] for e in edges]
+        cols = [e[1] for e in edges]
+        adj = sp.csr_matrix((weights, (rows, cols)), shape=(n_nodes, n_nodes), dtype=float)
+    else:
+        adj = sp.csr_matrix((n_nodes, n_nodes), dtype=float)
+
+    return G, adj, node_to_host, host_to_node

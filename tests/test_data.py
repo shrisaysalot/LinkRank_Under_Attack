@@ -10,7 +10,8 @@ from src.data import (
     sample_root_set,
     build_base_set,
     load_snap_graph,
-    load_webspam_labels
+    load_webspam_labels,
+    load_webspam_hostgraph
 )
 
 
@@ -58,6 +59,17 @@ def test_webspam_labels_undecided():
     df_ex = load_webspam_labels(split="set1", undecided_mode="exclude")
     assert "undecided" not in df_ex["raw_label"].values
     assert df_ex["binary_label"].isin([0, 1]).all()
+
+
+def test_webspam_hostgraph_loader():
+    G, adj, node_to_host, host_to_node = load_webspam_hostgraph(weighted=False)
+    assert G.number_of_nodes() == 11402
+    assert G.number_of_edges() == 730774
+    assert adj.shape == (11402, 11402)
+    assert len(node_to_host) == 11402
+    assert len(host_to_node) == 11402
+    assert node_to_host[0] == "007cleaningagent.co.uk"
+
 
     df_keep = load_webspam_labels(split="set1", undecided_mode="keep")
     assert "undecided" in df_keep["raw_label"].values

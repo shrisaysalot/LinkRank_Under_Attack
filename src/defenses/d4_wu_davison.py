@@ -5,7 +5,7 @@
 - D4b (wu_davison_outlink_jaccard_hits): Out-link Jaccard hub overlap variant,
   computed via full sparse pairwise matrix multiplication (no arbitrary window truncation).
 """
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Union
 import numpy as np
 import scipy.sparse as sp
 import networkx as nx
@@ -15,7 +15,7 @@ from src.rankers.base import RankResult
 
 
 def wu_davison_outlink_jaccard_hits(
-    G: nx.DiGraph,
+    graph_or_adj: Union[nx.DiGraph, sp.spmatrix],
     overlap_threshold: float = 0.5,
     penalty_factor: float = 0.2,
     tol: float = 1e-8,
@@ -27,35 +27,38 @@ def wu_davison_outlink_jaccard_hits(
     sparse matrix multiplication C = A * A^T (no arbitrary index window truncation).
     Hubs sharing target Jaccard similarity > overlap_threshold have their out-edges down-weighted.
     """
-    n = G.number_of_nodes()
-    if n == 0:
-        return RankResult(scores=np.array([]), hub_scores=np.array([]))
-
-    nodes = list(range(n)) if set(G.nodes()) == set(range(n)) else list(G.nodes())
-    node_to_idx = {node: i for i, node in enumerate(nodes)}
-
-    # Build binary sparse adjacency matrix
-    rows = [node_to_idx[u] for u, v in G.edges()]
-    cols = [node_to_idx[v] for u, v in G.edges()]
-    data = np.ones(len(rows), dtype=float)
-    A_bin = sp.csr_matrix((data, (rows, cols)), shape=(n, n), dtype=float)
+    if isinstance(graph_or_adj, (nx.DiGraph, nx.Graph)):
+        n = graph_or_adj.number_of_nodes()
+        if n == 0:
+            return RankResult(scores=np.array([]), hub_scores=np.array([]))
+        nodes = list(range(n)) if set(graph_or_adj.nodes()) == set(range(n)) else list(graph_or_adj.nodes())
+        node_to_idx = {node: i for i, node in enumerate(nodes)}
+        rows = [node_to_idx[u] for u, v in graph_or_adj.edges()]
+        cols = [node_to_idx[v] for u, v in graph_or_adj.edges()]
+        data = np.ones(len(rows), dtype=float)
+        A_bin = sp.csr_matrix((data, (rows, cols)), shape=(n, n), dtype=float)
+    else:
+        A_bin = graph_or_adj.tocsr().astype(float)
+        A_bin.data = np.ones_like(A_bin.data)
+        n = A_bin.shape[0]
+        coo = A_bin.tocoo()
+        rows, cols = coo.row, coo.col
 
     # Out-degrees
     out_degrees = np.array(A_bin.sum(axis=1)).flatten()
 
     # Exact pairwise intersection: C[i, j] = |Out(i) & Out(j)|
-    # A_bin * A_bin.T computes intersection for all pairs
     C = A_bin.dot(A_bin.T).tocoo()
 
-    # Find suspicious hub pairs where Jaccard > overlap_threshold
-    penalized_hubs = set()
-    for i, j, inter in zip(C.row, C.col, C.data):
-        if i >= j:  # Only upper triangle, skip diagonal
-            continue
-        union = out_degrees[i] + out_degrees[j] - inter
-        if union > 0 and (inter / union) > overlap_threshold:
-            penalized_hubs.add(i)
-            penalized_hubs.add(j)
+    # Vectorized suspicious hub pairs where Jaccard > overlap_threshold
+    mask = C.row < C.col
+    r_arr = C.row[mask]
+    c_arr = C.col[mask]
+    inter_arr = C.data[mask]
+    unions = out_degrees[r_arr] + out_degrees[c_arr] - inter_arr
+    suspicious = (unions > 0) & ((inter_arr / unions) > overlap_threshold)
+
+    penalized_hubs = set(r_arr[suspicious]).union(set(c_arr[suspicious]))
 
     hub_weights = np.ones(n, dtype=float)
     for idx in penalized_hubs:
@@ -68,7 +71,7 @@ def wu_davison_outlink_jaccard_hits(
 
 
 def wu_davison_hits(
-    G: nx.DiGraph,
+    graph_or_adj: Union[nx.DiGraph, sp.spmatrix],
     out_threshold: float = 0.4,
     in_threshold: float = 0.2,
     penalty_factor: float = 0.2,
@@ -80,17 +83,22 @@ def wu_davison_hits(
     Flags pairs of nodes that exhibit high out-link overlap combined with
     shared in-link patterns or mutual coupling, down-weighting colliding link farm edges.
     """
-    n = G.number_of_nodes()
-    if n == 0:
-        return RankResult(scores=np.array([]), hub_scores=np.array([]))
-
-    nodes = list(range(n)) if set(G.nodes()) == set(range(n)) else list(G.nodes())
-    node_to_idx = {node: i for i, node in enumerate(nodes)}
-
-    rows = [node_to_idx[u] for u, v in G.edges()]
-    cols = [node_to_idx[v] for u, v in G.edges()]
-    data = np.ones(len(rows), dtype=float)
-    A_bin = sp.csr_matrix((data, (rows, cols)), shape=(n, n), dtype=float)
+    if isinstance(graph_or_adj, (nx.DiGraph, nx.Graph)):
+        n = graph_or_adj.number_of_nodes()
+        if n == 0:
+            return RankResult(scores=np.array([]), hub_scores=np.array([]))
+        nodes = list(range(n)) if set(graph_or_adj.nodes()) == set(range(n)) else list(graph_or_adj.nodes())
+        node_to_idx = {node: i for i, node in enumerate(nodes)}
+        rows = [node_to_idx[u] for u, v in graph_or_adj.edges()]
+        cols = [node_to_idx[v] for u, v in graph_or_adj.edges()]
+        data = np.ones(len(rows), dtype=float)
+        A_bin = sp.csr_matrix((data, (rows, cols)), shape=(n, n), dtype=float)
+    else:
+        A_bin = graph_or_adj.tocsr().astype(float)
+        A_bin.data = np.ones_like(A_bin.data)
+        n = A_bin.shape[0]
+        coo = A_bin.tocoo()
+        rows, cols = coo.row, coo.col
 
     out_degrees = np.array(A_bin.sum(axis=1)).flatten()
     in_degrees = np.array(A_bin.sum(axis=0)).flatten()
@@ -101,21 +109,32 @@ def wu_davison_hits(
     # In-link co-occurrence: C_in[i, j] = |In(i) & In(j)|
     C_in = (A_bin.T.dot(A_bin)).tocsr()
 
-    penalized_nodes = set()
-    for i, j, inter_out in zip(C_out.row, C_out.col, C_out.data):
-        if i >= j:
-            continue
-        union_out = out_degrees[i] + out_degrees[j] - inter_out
-        jacc_out = inter_out / union_out if union_out > 0 else 0.0
+    mask = C_out.row < C_out.col
+    r_arr = C_out.row[mask]
+    c_arr = C_out.col[mask]
+    inter_out = C_out.data[mask]
+    unions_out = out_degrees[r_arr] + out_degrees[c_arr] - inter_out
 
-        if jacc_out > out_threshold:
-            # Check in-link overlap or mutual coupling
+    jacc_out = np.zeros_like(inter_out, dtype=float)
+    pos_mask = unions_out > 0
+    jacc_out[pos_mask] = inter_out[pos_mask] / unions_out[pos_mask]
+
+    # Candidate pairs with high out-link overlap
+    cand_idx = np.where(jacc_out > out_threshold)[0]
+    penalized_nodes = set()
+
+    for idx in cand_idx:
+        jo = jacc_out[idx]
+        i = r_arr[idx]
+        j = c_arr[idx]
+        if jo > 0.6:
+            penalized_nodes.add(i)
+            penalized_nodes.add(j)
+        else:
             inter_in = C_in[i, j]
             union_in = in_degrees[i] + in_degrees[j] - inter_in
             jacc_in = inter_in / union_in if union_in > 0 else 0.0
-
-            # Farm criterion: high out-link overlap (colluding hubs) OR combined dual overlap
-            if jacc_out > 0.6 or (jacc_out > out_threshold and jacc_in > in_threshold):
+            if jacc_in > in_threshold:
                 penalized_nodes.add(i)
                 penalized_nodes.add(j)
 
